@@ -13,6 +13,7 @@ def count_files_by_type(folder_path, file_extension):
     count = len(files)+1
 
     return count
+
 def rainbowColor(value):
     step = (value // 256) % 6
     pos = value % 256
@@ -88,6 +89,10 @@ def reset():
     screen.blit(salva, (15,SCREEN_Y-50+10))
     draw.rect(screen, (200,200,200), (105,SCREEN_Y-50+5, 90,40))
     screen.blit(cancella, (115,SCREEN_Y-50+10))
+    draw.rect(screen, (200,200,200), (205,SCREEN_Y-50+5, 90,40))
+    screen.blit(riempi, (215,SCREEN_Y-50+10))
+    draw.rect(screen, (200,200,200), (305,SCREEN_Y-50+5, 90,40))
+    screen.blit(arcobaleno, (315,SCREEN_Y-50+10))
     colore = (0,0,0)
     r = selectRadius(screen, 2)[0]
     rainbow = False
@@ -128,6 +133,9 @@ SCREEN_X, SCREEN_Y = 1280, 750
 myfont = font.SysFont("monospace", 30)
 salva = myfont.render('SAVE', True, (50,50,50))
 cancella = myfont.render('CANC', True, (50,50,50))
+riempi = myfont.render('FILL', True, (50,50,50))
+arcobaleno = myfont.render('RGB', True, (50,50,50))
+
 colori = [[(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255),(165, 42, 42),(255, 165, 0)],
           [(255, 255, 255),(255, 0, 255),(255, 255, 0),(0, 255, 255),(128, 0, 128),(255, 192, 203)]]
 
@@ -148,10 +156,16 @@ background = (255, 255, 255)
 screen.fill(background)
 drawPalette(screen, colori, palette, (0,0))
 draw.rect(screen, (50,50,50), (0, SCREEN_Y-50, SCREEN_X, 50))
+
 draw.rect(screen, (200,200,200), (5,SCREEN_Y-50+5, 90,40))
 screen.blit(salva, (15,SCREEN_Y-50+10))
 draw.rect(screen, (200,200,200), (105,SCREEN_Y-50+5, 90,40))
 screen.blit(cancella, (115,SCREEN_Y-50+10))
+draw.rect(screen, (200,200,200), (205,SCREEN_Y-50+5, 90,40))
+screen.blit(riempi, (215,SCREEN_Y-50+10))
+draw.rect(screen, (200,200,200), (305,SCREEN_Y-50+5, 90,40))
+screen.blit(arcobaleno, (315,SCREEN_Y-50+10))
+
 r, centri = selectRadius(screen, 2)
 while running:
     
@@ -171,15 +185,15 @@ while running:
                 else:
                     rainbow = False
                     color_value = 0
-
-                drawRainbow(screen, rainbow) 
-                print(bucket)
-            if e.key == K_b:
-                if rainbow:
-                    rainbow = False
                     if colorePrec:
                         colore = colorePrec
                         colorePrec = None
+
+                drawRainbow(screen, rainbow) 
+
+            if e.key == K_b:
+                if rainbow:
+                    rainbow = False
                     drawRainbow(screen, rainbow)
                 if bucket:
                     bucket = False
@@ -188,6 +202,9 @@ while running:
                     bucket = True
                     mouse.set_cursor(Cursor(11))
                 drawBucket(screen, bucket, colore)              
+
+        if mouse.get_pressed()[0]:# and 305 >= mp[0] > 395 + r and SCREEN_Y-50 < mp[1] < SCREEN_Y-10 and not saving:
+            pass
 
         if mouse.get_pressed()[0] and mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r and not saving:
             if not bucket:
@@ -228,7 +245,7 @@ while running:
                             colore = palette[k]
                             drawPalette(screen, colori, palette, (k[0]-5,k[2]-5))
                             if bucket:
-                                drawBucket(screen, bucket, colore)
+                                drawBucket(screen, bucket, colore)  
             
                 elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5:
                     saving = True
@@ -257,7 +274,33 @@ while running:
                 elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving:
                     reset()
 
-        
+            elif 205 <= mp[0] <= 295 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
+                if rainbow:
+                    mouse.set_cursor(Cursor(0))
+                    rainbow = False
+                    drawRainbow(screen, rainbow)
+                if not bucket:
+                    bucket = True
+                else:
+                    bucket = False
+
+                drawBucket(screen, bucket, colore)
+                
+
+            elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
+                if bucket:
+                    mouse.set_cursor(Cursor(0))
+                    bucket = False
+                    drawBucket(screen, bucket, colore)
+                if not rainbow:
+                    rainbow = True
+                else:
+                    rainbow = False
+                    color_value = 0
+                    colorePrec = None  # Reset colorePrec when exiting rainbow mode
+
+                drawRainbow(screen, rainbow)
+
             elif mp[1] > SCREEN_Y-50:
                 click = screen.get_at(mp) == (255,255,255)
                 selected = False
