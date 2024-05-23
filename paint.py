@@ -121,6 +121,51 @@ def fill(surface, position, fill_color):
 
     surfarray.blit_array(surface, surf_array)
 
+def toggleRainbow(bucket, rainbow):
+    global color_value, colore, colorePrec
+    if bucket:
+        mouse.set_cursor(Cursor(0))
+        bucket = False
+        drawBucket(screen, bucket, colore)
+    if not rainbow:
+        rainbow = True
+    else:
+        rainbow = False
+        color_value = 0
+        if colorePrec:
+            colore = colorePrec
+            colorePrec = None
+    drawRainbow(screen, rainbow)
+    return bucket, rainbow
+
+def toggleBucket(bucket, rainbow):
+    global colore, colorePrec
+    if rainbow:
+        mouse.set_cursor(Cursor(0))
+        rainbow = False
+        colore = colorePrec
+        drawRainbow(screen, rainbow)
+    if not bucket:
+        bucket = True
+        mouse.set_cursor(Cursor(11))
+    else:
+        bucket = False
+    drawBucket(screen, bucket, colore)
+    return bucket, rainbow
+
+def changeSize():
+    global r
+    click = screen.get_at(mp) == (255,255,255)
+    selected = False
+    i = 0
+    while not selected and i < 4:
+        if (mp[0]**2+mp[1]**2) <= (centri[i][0]+8)**2 + (centri[i][1]+8)**2 and click:
+            selected = True
+            indice = i
+        i += 1
+    if selected:
+        r = selectRadius(screen, indice)[0]
+
 # Initialize Pygame
 init()
 
@@ -176,31 +221,11 @@ while running:
 
         if e.type == KEYDOWN:
             if e.key == K_SPACE:
-                if bucket:
-                    mouse.set_cursor(Cursor(0))
-                    bucket = False
-                    drawBucket(screen, bucket, colore)
-                if not rainbow:
-                    rainbow = True
-                else:
-                    rainbow = False
-                    color_value = 0
-                    if colorePrec:
-                        colore = colorePrec
-                        colorePrec = None
-                drawRainbow(screen, rainbow)
+                bucket, rainbow = toggleRainbow(bucket, rainbow)
+                
 
             if e.key == K_b:
-                if rainbow:
-                    rainbow = False
-                    drawRainbow(screen, rainbow)
-                if bucket:
-                    bucket = False
-                    mouse.set_cursor(Cursor(0))
-                else:
-                    bucket = True
-                    mouse.set_cursor(Cursor(11))
-                drawBucket(screen, bucket, colore)
+                bucket, rainbow = toggleBucket(bucket, rainbow)
 
         if mouse.get_pressed()[0] and mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r and not saving:
             if not bucket:
@@ -262,42 +287,13 @@ while running:
                     reset()
 
             elif 205 <= mp[0] <= 295 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
-                if rainbow:
-                    mouse.set_cursor(Cursor(0))
-                    rainbow = False
-                    colore = colorePrec
-                    drawRainbow(screen, rainbow)
-                if not bucket:
-                    bucket = True
-                else:
-                    bucket = False
-                drawBucket(screen, bucket, colore)
-                
+                bucket, rainbow = toggleBucket(bucket, rainbow)
 
             elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
-                if bucket:
-                    mouse.set_cursor(Cursor(0))
-                    bucket = False
-                    drawBucket(screen, bucket, colore)
-                if not rainbow:
-                    rainbow = True
-                else:
-                    rainbow = False
-                    color_value = 0
-                    colorePrec = None
-                drawRainbow(screen, rainbow)
+                bucket, rainbow = toggleRainbow(bucket, rainbow)
 
             elif mp[1] > SCREEN_Y-50:
-                click = screen.get_at(mp) == (255,255,255)
-                selected = False
-                i = 0
-                while not selected and i < 4:
-                    if (mp[0]**2+mp[1]**2) <= (centri[i][0]+8)**2 + (centri[i][1]+8)**2 and click:
-                        selected = True
-                        indice = i
-                    i += 1
-                if selected:
-                    r = selectRadius(screen, indice)[0]
+                changeSize()
 
     display.flip()
     clock.tick(60)
