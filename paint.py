@@ -121,6 +121,7 @@ def fill(surface, position, fill_color):
 
     surfarray.blit_array(surface, surf_array)
 
+# Function to toggle rainbow mode
 def toggleRainbow(bucket, rainbow):
     global color_value, colore, colorePrec
     if bucket:
@@ -138,6 +139,7 @@ def toggleRainbow(bucket, rainbow):
     drawRainbow(screen, rainbow)
     return bucket, rainbow
 
+# Function to toggle fill bucket mode
 def toggleBucket(bucket, rainbow):
     global colore, colorePrec
     if rainbow:
@@ -153,6 +155,7 @@ def toggleBucket(bucket, rainbow):
     drawBucket(screen, bucket, colore)
     return bucket, rainbow
 
+# Function to change the size of the drawing tool
 def changeSize():
     global r
     click = screen.get_at(mp) == (255,255,255)
@@ -214,19 +217,27 @@ r, centri = selectRadius(screen, 2)
 
 # Main loop
 while running:
+    # get mouse position
     mp = mouse.get_pos()
+    #check events
     for e in event.get():
+
+        # quit
         if e.type == QUIT:
             running = False
 
+        # press button on keyboard (space or b)
         if e.type == KEYDOWN:
+
+            # rgb
             if e.key == K_SPACE:
                 bucket, rainbow = toggleRainbow(bucket, rainbow)
                 
-
+            # fill
             if e.key == K_b:
                 bucket, rainbow = toggleBucket(bucket, rainbow)
 
+        # draw + fill
         if mouse.get_pressed()[0] and mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r and not saving:
             if not bucket:
                 if rainbow:
@@ -246,14 +257,17 @@ while running:
                 if screen.get_at(mp)[:3] != colore and not rainbow:
                     fill(screen, mp, colore)
 
+        # click outside canvas
         if mouse.get_pressed()[0] and not (mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r) and not saving:
             last_pos = None
 
+        # release mouse
         if e.type == MOUSEBUTTONUP:
             last_pos = None
             color_value = 0
 
         if e.type == MOUSEBUTTONDOWN:
+            # click change color
             if 0 <= mp[0] <= 200 and not saving and not rainbow:
                 if 0 <= mp[1] <= SCREEN_Y-50:
                     for k in palette:
@@ -262,6 +276,7 @@ while running:
                             drawPalette(screen, colori, palette, (k[0]-5,k[2]-5))
                             if bucket:
                                 drawBucket(screen, bucket, colore)
+                # click save
                 elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5:
                     saving = True
                     screenshot = screen.subsurface(Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
@@ -283,19 +298,25 @@ while running:
                         image.save(screenshot, f"python_paint\\{count}-{nome}.png")
                         print(f"Saved as {count}-{nome}")
                     saving = False
+                
+                # click canc
                 elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving:
                     reset()
 
+            # click fill
             elif 205 <= mp[0] <= 295 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
                 bucket, rainbow = toggleBucket(bucket, rainbow)
 
+            # click rgb
             elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
                 bucket, rainbow = toggleRainbow(bucket, rainbow)
 
+            # click circles to change size
             elif mp[1] > SCREEN_Y-50:
                 changeSize()
 
+    # draw everything
     display.flip()
-    clock.tick(60)
+    clock.tick(144)
 
 quit()
