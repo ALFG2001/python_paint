@@ -240,6 +240,7 @@ while running:
         # draw + fill
         if mouse.get_pressed()[0] and mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r and not saving:
             if not bucket:
+                print(colore)
                 if rainbow:
                     if not colorePrec:
                         colorePrec = colore
@@ -272,7 +273,9 @@ while running:
                 if 0 <= mp[1] <= SCREEN_Y-50:
                     for k in palette:
                         if k[0] <= mp[0] <= k[1] and k[2] <= mp[1] <= k[3]:
+                            
                             colore = palette[k]
+                            colorePrec = colore
                             drawPalette(screen, colori, palette, (k[0]-5,k[2]-5))
                             if bucket:
                                 drawBucket(screen, bucket, colore)
