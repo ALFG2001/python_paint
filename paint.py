@@ -291,14 +291,19 @@ while running:
 
                     if not nome:
                         if count:
-                            image.save(screenshot, f"python_paint/drawings\\{count}-screenshot.png")
+                            image.save(screenshot, f"python_paint\\drawings\\{count}-screenshot.png")
                             print(f"Saved as {count}-screenshot")
                         else:
-                            image.save(screenshot, f"python_paint/drawings\\{count}-screenshot.png")
+                            image.save(screenshot, f"python_paint\\drawings\\{count}-screenshot.png")
                             print(f"Saved as {count}-screenshot")
                     else:
-                        image.save(screenshot, f"python_paint/drawings\\{count}-{nome}.png")
-                        print(f"Saved as {count}-{nome}")
+                        try:
+                            image.save(screenshot, f"python_paint\\drawings\\{count}-{nome}.png")
+                            print(f"Saved as {count}-{nome}")
+                        except Exception as e:
+                            print(f"An error occurred: {e}")
+                            while True:
+                                pass
                     saving = False
                 
                 # click canc
