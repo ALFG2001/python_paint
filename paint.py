@@ -240,7 +240,6 @@ while running:
         # draw + fill
         if mouse.get_pressed()[0] and mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r and not saving:
             if not bucket:
-                print(colore)
                 if rainbow:
                     if not colorePrec:
                         colorePrec = colore
