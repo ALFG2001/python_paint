@@ -1,8 +1,23 @@
 from pygame import *
+import sys
 import os
 import glob
 
-# Function to count files by type
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    if getattr(sys, 'frozen', False):
+        # The application is frozen
+        base_path = os.path.dirname(sys.executable)
+    else:
+        # The application is not frozen
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    # print("base path normale: ",base_path)
+    # print("ultimi 5 caratteri: ",base_path[-5:])
+    if base_path[-5:] == "\dist":
+        base_path = base_path[:-5]
+    # print("base path definitivo: ", base_path)
+    return os.path.join(base_path, relative_path)
+
 def count_files_by_type(folder_path, file_extension):
     search_pattern = os.path.join(folder_path, f"*.{file_extension}")
     files = glob.glob(search_pattern)
@@ -179,6 +194,7 @@ salva = myfont.render('SAVE', True, (50,50,50))
 cancella = myfont.render('CANC', True, (50,50,50))
 riempi = myfont.render('FILL', True, (50,50,50))
 arcobaleno = myfont.render('RGB', True, (50,50,50))
+drawings_folder = resource_path('drawings')
 
 # Define color palette
 colori = [[(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255),(165, 42, 42),(255, 165, 0)],
@@ -282,7 +298,7 @@ while running:
                 elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5:
                     saving = True
                     screenshot = screen.subsurface(Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
-                    count = count_files_by_type("python_paint/drawings", "png")
+                    count = count_files_by_type(drawings_folder, "png")
                     nome = input(f"SALVA CON NOME: {count}-")
 
                     while not nome.isalnum() and nome != "":
@@ -290,20 +306,14 @@ while running:
                         nome = input(f"SALVA CON NOME: {count}-")
 
                     if not nome:
-                        if count:
-                            image.save(screenshot, f"python_paint\\drawings\\{count}-screenshot.png")
-                            print(f"Saved as {count}-screenshot")
-                        else:
-                            image.save(screenshot, f"python_paint\\drawings\\{count}-screenshot.png")
-                            print(f"Saved as {count}-screenshot")
+                        filename = f"{count}-screenshot.png"
                     else:
-                        try:
-                            image.save(screenshot, f"python_paint\\drawings\\{count}-{nome}.png")
-                            print(f"Saved as {count}-{nome}")
-                        except Exception as e:
-                            print(f"An error occurred: {e}")
-                            while True:
-                                pass
+                        filename = f"{count}-{nome}.png"
+
+                    save_path = os.path.join(drawings_folder, filename)
+                    # print(save_path)
+                    image.save(screenshot, save_path)
+                    print(f"Saved as {filename}")
                     saving = False
                 
                 # click canc
