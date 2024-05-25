@@ -291,13 +291,13 @@ while running:
 
                     if not nome:
                         if count:
-                            image.save(screenshot, f"python_paint\\{count}-screenshot.png")
+                            image.save(screenshot, f"Desktop\\{count}-screenshot.png")
                             print(f"Saved as {count}-screenshot")
                         else:
-                            image.save(screenshot, f"python_paint\\{count}-screenshot.png")
+                            image.save(screenshot, f"Desktop\\{count}-screenshot.png")
                             print(f"Saved as {count}-screenshot")
                     else:
-                        image.save(screenshot, f"python_paint\\{count}-{nome}.png")
+                        image.save(screenshot, f"Desktop\\{count}-{nome}.png")
                         print(f"Saved as {count}-{nome}")
                     saving = False
                 
