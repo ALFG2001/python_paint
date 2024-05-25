@@ -282,7 +282,7 @@ while running:
                 elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5:
                     saving = True
                     screenshot = screen.subsurface(Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
-                    count = count_files_by_type("paint", "png")
+                    count = count_files_by_type("python_paint/drawings", "png")
                     nome = input(f"SALVA CON NOME: {count}-")
 
                     while not nome.isalnum() and nome != "":
@@ -291,13 +291,13 @@ while running:
 
                     if not nome:
                         if count:
-                            image.save(screenshot, f"Desktop\\{count}-screenshot.png")
+                            image.save(screenshot, f"python_paint/drawings\\{count}-screenshot.png")
                             print(f"Saved as {count}-screenshot")
                         else:
-                            image.save(screenshot, f"Desktop\\{count}-screenshot.png")
+                            image.save(screenshot, f"python_paint/drawings\\{count}-screenshot.png")
                             print(f"Saved as {count}-screenshot")
                     else:
-                        image.save(screenshot, f"Desktop\\{count}-{nome}.png")
+                        image.save(screenshot, f"python_paint/drawings\\{count}-{nome}.png")
                         print(f"Saved as {count}-{nome}")
                     saving = False
                 
