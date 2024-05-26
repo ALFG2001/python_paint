@@ -94,9 +94,10 @@ def selectRadius(screen, selected):
 
 # Function to reset the screen and tools to default state
 def reset():
-    global colore, r, rainbow, colorePrec
+    global colore, r, rainbow, colorePrec, selezione
+    selezione = (0,0)
     screen.fill(background)
-    drawPalette(screen, colori, palette, (0,0))
+    drawPalette(screen, colori, palette, selezione)
     draw.rect(screen, (50,50,50), (0, SCREEN_Y-50, SCREEN_X, 50))
     draw.rect(screen, (200,200,200), (5,SCREEN_Y-50+5, 90,40))
     screen.blit(salva, (15,SCREEN_Y-50+10))
@@ -155,7 +156,6 @@ def toggleRainbow(bucket, rainbow):
 def toggleBucket(bucket, rainbow):
     global colore, colorePrec
     if rainbow:
-        mouse.set_cursor(Cursor(0))
         rainbow = False
         colore = colorePrec
         drawRainbow(screen, rainbow)
@@ -164,6 +164,7 @@ def toggleBucket(bucket, rainbow):
         mouse.set_cursor(Cursor(11))
     else:
         bucket = False
+        mouse.set_cursor(Cursor(0))
     drawBucket(screen, bucket, colore)
     return bucket, rainbow
 
@@ -205,6 +206,7 @@ last_pos = None
 color_value = 0
 rainbow = False
 bucket = False
+selezione = (0,0)
 clock = time.Clock()
 
 # Set up the display
@@ -212,7 +214,7 @@ display.set_caption("PAINT IN PYTHON")
 screen = display.set_mode([SCREEN_X, SCREEN_Y], DOUBLEBUF)
 background = (255, 255, 255)
 screen.fill(background)
-drawPalette(screen, colori, palette, (0,0))
+drawPalette(screen, colori, palette, selezione)
 draw.rect(screen, (50,50,50), (0, SCREEN_Y-50, SCREEN_X, 50))
 
 draw.rect(screen, (200,200,200), (5,SCREEN_Y-50+5, 90,40))
@@ -250,7 +252,7 @@ while running:
                 bucket, rainbow = toggleBucket(bucket, rainbow)
 
         # draw + fill
-        if mouse.get_pressed()[0] and mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r and not saving:
+        if mouse.get_pressed()[0] and mp[0] > 200 - r and mp[1] < SCREEN_Y-50 + r and not saving:
             if not bucket:
                 if rainbow:
                     if not colorePrec:
@@ -262,15 +264,33 @@ while running:
                         colore = colorePrec
                         colorePrec = None
                 draw.circle(screen, colore, mp, r)
+                drawPalette(screen, colori, palette, selezione)
+                draw.rect(screen, (50,50,50), (0, SCREEN_Y-50, SCREEN_X, 50))
+                draw.rect(screen, (200,200,200), (5,SCREEN_Y-50+5, 90,40))
+                screen.blit(salva, (15,SCREEN_Y-50+10))
+                draw.rect(screen, (200,200,200), (105,SCREEN_Y-50+5, 90,40))
+                screen.blit(cancella, (115,SCREEN_Y-50+10))
+                draw.rect(screen, (200,200,200), (205,SCREEN_Y-50+5, 90,40))
+                screen.blit(riempi, (215,SCREEN_Y-50+10))
+                draw.rect(screen, (200,200,200), (305,SCREEN_Y-50+5, 90,40))
+                screen.blit(arcobaleno, (315,SCREEN_Y-50+10))
+                selectRadius(screen, (r//2)-2)
+                if rainbow:
+                    drawRainbow(screen, True)
+                elif bucket:
+                    drawBucket(screen, True, colore)
                 if last_pos:
                     roundLine(screen, colore, mp, last_pos, r)
                 last_pos = mp
             else:
-                if screen.get_at(mp)[:3] != colore and not rainbow:
-                    fill(screen, mp, colore)
+                try:
+                    if screen.get_at(mp)[:3] != colore and not rainbow and mp[0] > 200 and mp[1] < SCREEN_Y-50:
+                        fill(screen, mp, colore)
+                except:
+                    pass
 
         # click outside canvas
-        if mouse.get_pressed()[0] and not (mp[0] > 200 + r and mp[1] < SCREEN_Y-50 - r) and not saving:
+        if mouse.get_pressed()[0] and not (mp[0] > 200 - r and mp[1] < SCREEN_Y-50 + r ) and not saving:
             last_pos = None
 
         # release mouse
@@ -287,7 +307,8 @@ while running:
                             
                             colore = palette[k]
                             colorePrec = colore
-                            drawPalette(screen, colori, palette, (k[0]-5,k[2]-5))
+                            selezione = (k[0]-5,k[2]-5)
+                            drawPalette(screen, colori, palette, selezione)
                             if bucket:
                                 drawBucket(screen, bucket, colore)
                 # click save
