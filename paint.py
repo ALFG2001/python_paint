@@ -1,26 +1,23 @@
 from pygame import *
-import sys
-import os
-import glob
+from os import path, makedirs
+from glob import glob
+from tkinter import Tk, simpledialog, filedialog
 
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    if getattr(sys, 'frozen', False):
-        # The application is frozen
-        base_path = os.path.dirname(sys.executable)
-    else:
-        # The application is not frozen
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    # print("base path normale: ",base_path)
-    # print("ultimi 5 caratteri: ",base_path[-5:])
-    if base_path[-5:] == "\dist":
-        base_path = base_path[:-5]
-    # print("base path definitivo: ", base_path)
-    return os.path.join(base_path, relative_path)
+def select_directory():
+    root = Tk()
+    root.withdraw()  # Hide the root window
+    folder_selected = filedialog.askdirectory()
+    return folder_selected
+
+def prompt_file_name(default_name):
+    root = Tk()
+    root.withdraw()  # Hide the root window
+    file_name = simpledialog.askstring("Input", f"Save as:")
+    return file_name
 
 def count_files_by_type(folder_path, file_extension):
-    search_pattern = os.path.join(folder_path, f"*.{file_extension}")
-    files = glob.glob(search_pattern)
+    search_pattern = path.join(folder_path, f"*.{file_extension}")
+    files = glob(search_pattern)
     count = len(files) + 1
     return count
 
@@ -194,7 +191,6 @@ salva = myfont.render('SAVE', True, (50,50,50))
 cancella = myfont.render('CANC', True, (50,50,50))
 riempi = myfont.render('FILL', True, (50,50,50))
 arcobaleno = myfont.render('RGB', True, (50,50,50))
-drawings_folder = resource_path('drawings')
 
 # Define color palette
 colori = [[(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255),(165, 42, 42),(255, 165, 0)],
@@ -298,24 +294,22 @@ while running:
                 elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5:
                     saving = True
                     screenshot = screen.subsurface(Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                    drawings_folder = select_directory()
                     count = count_files_by_type(drawings_folder, "png")
-                    nome = input(f"SALVA CON NOME: {count}-")
+                    default_name = f"{count}"
+                    file_name = prompt_file_name(default_name)
 
-                    while not nome.isalnum() and nome != "":
-                        print("INVALID NAME!!!")
-                        nome = input(f"SALVA CON NOME: {count}-")
-
-                    if not nome:
-                        filename = f"{count}-screenshot.png"
+                    if not file_name:
+                        filename = f"{default_name}-drawing.png"
                     else:
-                        filename = f"{count}-{nome}.png"
+                        filename = f"{default_name}-{file_name}.png"
 
-                    save_path = os.path.join(drawings_folder, filename)
+                    save_path = path.join(drawings_folder, filename)
                     # print(save_path)
                     try:
                         image.save(screenshot, save_path)
                     except error:
-                        os.makedirs(drawings_folder)
+                        makedirs(drawings_folder)
                         image.save(screenshot, save_path)
                     print(f"Saved as {filename}")
                     saving = False
