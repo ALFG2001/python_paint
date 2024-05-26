@@ -312,7 +312,11 @@ while running:
 
                     save_path = os.path.join(drawings_folder, filename)
                     # print(save_path)
-                    image.save(screenshot, save_path)
+                    try:
+                        image.save(screenshot, save_path)
+                    except error:
+                        os.makedirs(drawings_folder)
+                        image.save(screenshot, save_path)
                     print(f"Saved as {filename}")
                     saving = False
                 
