@@ -319,20 +319,22 @@ while running:
                     count = count_files_by_type(drawings_folder, "png")
                     default_name = f"{count}"
                     file_name = prompt_file_name()
+                    print(file_name)
 
-                    if not file_name:
-                        filename = f"{default_name}-drawing.png"
-                    else:
-                        filename = f"{default_name}-{file_name}.png"
+                    if file_name != None:
+                        if not file_name:
+                            filename = f"{default_name}-drawing.png"
+                        else:
+                            filename = f"{default_name}-{file_name}.png"
 
-                    save_path = path.join(drawings_folder, filename)
-                    # print(save_path)
-                    try:
-                        image.save(screenshot, save_path)
-                    except error:
-                        makedirs(drawings_folder)
-                        image.save(screenshot, save_path)
-                    print(f"Saved as {filename}")
+                        save_path = path.join(drawings_folder, filename)
+                        # print(save_path)
+                        try:
+                            image.save(screenshot, save_path)
+                        except error:
+                            makedirs(drawings_folder)
+                            image.save(screenshot, save_path)
+                        print(f"Saved as {filename}")
                     saving = False
                 
                 # click canc
