@@ -319,8 +319,6 @@ while running:
                     count = count_files_by_type(drawings_folder, "png")
                     default_name = f"{count}"
                     file_name = prompt_file_name()
-                    print(file_name)
-
                     if file_name != None:
                         if not file_name:
                             filename = f"{default_name}-drawing.png"
