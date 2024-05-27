@@ -9,7 +9,7 @@ def select_directory():
     folder_selected = filedialog.askdirectory()
     return folder_selected
 
-def prompt_file_name(default_name):
+def prompt_file_name():
     root = Tk()
     root.withdraw()  # Hide the root window
     file_name = simpledialog.askstring("Input", f"Save as:")
@@ -318,7 +318,7 @@ while running:
                     drawings_folder = select_directory()
                     count = count_files_by_type(drawings_folder, "png")
                     default_name = f"{count}"
-                    file_name = prompt_file_name(default_name)
+                    file_name = prompt_file_name()
 
                     if not file_name:
                         filename = f"{default_name}-drawing.png"
