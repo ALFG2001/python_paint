@@ -9,6 +9,8 @@ def select_directory():
     root = Tk()
     root.withdraw()  # Hide the root window
     folder_selected = filedialog.askdirectory()
+    root.iconify()
+    root.destroy()
     return folder_selected
 
 # Prompts the user to enter a file name
@@ -124,7 +126,7 @@ def draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRe
 # Resets the screen and tools to default state
 def reset():
     """Resets the screen and tools to default state."""
-    global colore, r, rainbow, colorePrec, selezione, font
+    global colore, r, rainbow, bucket, colorePrec, selezione, font
     selezione = (0,0)
     screen.fill(background)
     drawPalette(screen, colori, palette, selezione)
@@ -132,6 +134,8 @@ def reset():
     colore = (0,0,0)
     r = selectRadius(screen, 2)[0]
     rainbow = False
+    bucket = False
+    mouse.set_cursor(Cursor(0))
     colorePrec = None
 
 # Flood fill algorithm to fill an area with a color
@@ -375,23 +379,24 @@ while running:
                 saving = True
                 screenshot = screen.subsurface(Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                 drawings_folder = select_directory()
-                count = count_files_by_type(drawings_folder, "png")
-                default_name = f"{count}"
-                file_name = prompt_file_name()
-                if file_name != None:
-                    if not file_name:
-                        filename = f"{default_name}-drawing.png"
-                    else:
-                        filename = f"{default_name}-{file_name}.png"
+                if drawings_folder:
+                    count = count_files_by_type(drawings_folder, "png")
+                    default_name = f"{count}"
+                    file_name = prompt_file_name()
+                    if file_name != None:
+                        if not file_name:
+                            filename = f"{default_name}-drawing.png"
+                        else:
+                            filename = f"{default_name}-{file_name}.png"
 
-                    save_path = path.join(drawings_folder, filename)
-                    # print(save_path)
-                    try:
-                        image.save(screenshot, save_path)
-                    except error:
-                        makedirs(drawings_folder)
-                        image.save(screenshot, save_path)
-                    print(f"Saved as {filename}")
+                        save_path = path.join(drawings_folder, filename)
+                        # print(save_path)
+                        try:
+                            image.save(screenshot, save_path)
+                        except error:
+                            makedirs(drawings_folder)
+                            image.save(screenshot, save_path)
+                        print(f"Saved as {filename}")
                 saving = False
             
             # click canc
