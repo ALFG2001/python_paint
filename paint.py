@@ -51,13 +51,8 @@ def rainbowColor(value):
 def drawRainbow(screen, r):
     """Draws rainbow icon."""
     if r:
-        draw.circle(screen, (255, 0, 0), (100,690), 80, width=10, draw_top_right=True, draw_top_left=True)
-        draw.circle(screen, (255, 165, 0), (100,690), 70, width=10, draw_top_right=True, draw_top_left=True)
-        draw.circle(screen, (255, 255, 0), (100,690), 60, width=10, draw_top_right=True, draw_top_left=True)
-        draw.circle(screen, (0, 255, 0), (100,690), 50, width=10, draw_top_right=True, draw_top_left=True)
-        draw.circle(screen, (0, 0, 255), (100,690), 40, width=10, draw_top_right=True, draw_top_left=True)
-        draw.circle(screen, (75, 0, 130), (100,690), 30, width=10, draw_top_right=True, draw_top_left=True)
-        draw.circle(screen, (238, 130, 238), (100,690), 20, width=10, draw_top_right=True, draw_top_left=True)
+        for i, color in enumerate([(255, 0, 0), (255, 165, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (75, 0, 130), (238, 130, 238)]):
+            draw.circle(screen, color, (100, 690), 80 - i * 10, width=10, draw_top_right=True, draw_top_left=True)
     else:
         draw.rect(screen, (150,150,150), (20,610, 160, 80))
 
@@ -256,6 +251,7 @@ tastoRedo = myfont.render('↪', True, (150,150,150))
 colori = [[(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255),(165, 42, 42),(255, 165, 0)],
           [(255, 255, 255),(255, 0, 255),(255, 255, 0),(0, 255, 255),(128, 0, 128),(255, 192, 203)]]
 
+# flags and starting conditions
 palette = {}
 running = True
 saving = False
@@ -402,6 +398,11 @@ while running:
             # click canc
             
             elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving:
+                screenshot = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                screenshotsUndo.append(screenshot)
+                screenshotsRedo = []
+                tastoUndo = myfont.render('↩', True, (50,50,50))
+                tastoRedo = myfont.render('↪', True, (150,150,150))
                 reset()
 
             # click fill
