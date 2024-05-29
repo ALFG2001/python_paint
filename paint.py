@@ -2,6 +2,7 @@ from pygame import *
 from os import path, makedirs
 from glob import glob
 from tkinter import Tk, simpledialog, filedialog
+from copy import deepcopy
 
 # Opens a dialog to select a directory
 def select_directory():
@@ -102,7 +103,7 @@ def selectRadius(screen, selected):
     return (selected+2)*2, centri
 
 # Draws the toolbar on the bottom
-def draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo):
+def draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker):
     """Draws the toolbar on the bottom."""
     draw.rect(screen, (50, 50, 50), (0, SCREEN_Y - 50, SCREEN_X, 50))
     draw.rect(screen, (200, 200, 200), (5, SCREEN_Y - 50 + 5, 90, 40))
@@ -117,17 +118,21 @@ def draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRe
     screen.blit(tastoUndo, (415, SCREEN_Y - 50))
     draw.rect(screen, (200, 200, 200), (455, SCREEN_Y - 50 + 5, 45, 40))
     screen.blit(tastoRedo, (465, SCREEN_Y - 50))
+    draw.rect(screen, (200, 200, 200), (505, SCREEN_Y - 50 + 5, 45, 40))
+    screen.blit(tastoPicker, (515, SCREEN_Y - 50))
 
 # Resets the screen and tools to default state
 def reset():
     """Resets the screen and tools to default state."""
-    global colore, r, rainbow, bucket, colorePrec, selezione, font
+    global colore, radius, rainbow, bucket, colorePrec, selezione, font
+    colori = deepcopy(default_colori)
+    palette = {}
     selezione = (0,0)
     screen.fill(background)
     drawPalette(screen, colori, palette, selezione)
-    draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo)
+    draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker)
     colore = (0,0,0)
-    r = selectRadius(screen, 2)[0]
+    radius = selectRadius(screen, 2)[0]
     rainbow = False
     bucket = False
     mouse.set_cursor(Cursor(0))
@@ -195,7 +200,7 @@ def toggleBucket(bucket, rainbow):
 # Changes the size of the drawing tool
 def changeSize():
     """Changes the size of the drawing tool."""
-    global r
+    global radius
     click = screen.get_at(mp) == (255,255,255)
     selected = False
     i = 0
@@ -205,7 +210,7 @@ def changeSize():
             indice = i
         i += 1
     if selected:
-        r = selectRadius(screen, indice)[0]
+        radius = selectRadius(screen, indice)[0]
 
 # Takes a screenshot
 def save_canvas(screen, rect):
@@ -234,11 +239,75 @@ def undoRedo(screen, list_pop, list_append, UR):
             tastoRedo = myfont.render('↪', True, (150,150,150))
             screen.blit(tastoRedo, (465,SCREEN_Y-50))
 
+def draw_slider(screen, x, y, value, color):
+    """Draw a slider bar with the given value and color."""
+    draw.rect(screen, (255, 255, 255), (x, y, 258, 20))  # Background
+    draw.rect(screen, (0, 0, 0), (x, y, 258, 20), 2)    # Border
+    draw.rect(screen, color, (x + 1, y + 1, value, 18)) # Value fill
+
+def get_slider_value(mouse_x, slider_x):
+    """Calculate the slider value based on mouse position."""
+    return max(0, min(255, mouse_x - slider_x))
+
+def buildColorPicker(window, colori:list, selected_color, selected):
+    """Build the color picker interface."""
+    myfont = font.SysFont("segoeuisymbol", 30)
+    save = myfont.render('SAVE', True, (0, 0, 0))
+    cancel = myfont.render('CANCEL', True, (0, 0, 0))
+    
+    window.blit(img, (0, 0))  # Display the color grid image
+
+    draw.rect(window, (50, 50, 50), (720, 0, 360, 720))  # Sidebar background
+
+    draw.rect(window, (150, 150, 150), (725, 650, 90, 50))  # Save button
+    window.blit(save, (735, 650))
+
+    draw.rect(window, (150, 150, 150), (950, 650, 125, 50))  # Cancel button
+    window.blit(cancel, (960, 650))
+
+    draw.rect(window, (150, 150, 150), (725, 105, 350, 118))  # Color preview area
+   
+    draw.rect(window, (150, 150, 150), (750, 250, 300, 50))
+    window.blit(myfont.render('DEFAULT PALETTE', True, (0, 0, 0)), (760, 250))
+
+    draw.rect(window, selected_color, (725, 5, 350, 90))  # Selected color display
+
+    draw_slider(window, 760, 400, r, (255, 0, 0))  # Red slider
+    draw_slider(window, 760, 450, g, (0, 255, 0))  # Green slider
+    draw_slider(window, 760, 500, b, (0, 0, 255))  # Blue slider
+
+    window.blit(myfont.render('R', True, (0, 0, 0)), (730, 385))
+    window.blit(myfont.render('G', True, (0, 0, 0)), (730, 435))
+    window.blit(myfont.render('B', True, (0, 0, 0)), (730, 485))
+
+    draw.rect(window, (150, 50, 50), (1020, 390, 50, 40), border_radius=15)  # Red value box
+    draw.rect(window, (50, 150, 50), (1020, 440, 50, 40), border_radius=15)  # Green value box
+    draw.rect(window, (50, 50, 150), (1020, 490, 50, 40), border_radius=15)  # Blue value box
+
+    window.blit(myfont.render(f'{r}', True, (0, 0, 0)), (1020, 385))
+    window.blit(myfont.render(f'{g}', True, (0, 0, 0)), (1020, 435))
+    window.blit(myfont.render(f'{b}', True, (0, 0, 0)), (1020, 485))
+
+    for j in range(len(colori[0])):
+        for i in range(len(colori)):
+            color_rect = Rect(730 + 58 * j, 110 + 58 * i, 50, 50)
+            if selected:
+                if colori[i][j] == selected_color:
+                    colori[selected_color_coord[0]][selected_color_coord[1]] = selected_color
+                    draw.rect(window, selected_color, color_rect)
+                    draw.rect(window, (50, 50, 50), color_rect, 3)
+                else:
+                    draw.rect(window, colori[i][j], color_rect)
+            else:
+                draw.rect(window, colori[i][j], color_rect)
+
+    return colori, selected_color
+
 # Initialize Pygame
 init()
 
 # Initialize screen size and font
-SCREEN_X, SCREEN_Y = 1280, 750 
+SCREEN_X, SCREEN_Y = 1280, 770 
 myfont = font.SysFont("segoeuisymbol", 30)
 salva = myfont.render('SAVE', True, (50,50,50))
 cancella = myfont.render('CANC', True, (50,50,50))
@@ -246,10 +315,14 @@ riempi = myfont.render('FILL', True, (50,50,50))
 arcobaleno = myfont.render('RGB', True, (50,50,50))
 tastoUndo = myfont.render('↩', True, (150,150,150))
 tastoRedo = myfont.render('↪', True, (150,150,150))
+tastoPicker = myfont.render('🎨', True, (50,50,50))
 
 # Define color palette
 colori = [[(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255),(165, 42, 42),(255, 165, 0)],
           [(255, 255, 255),(255, 0, 255),(255, 255, 0),(0, 255, 255),(128, 0, 128),(255, 192, 203)]]
+
+new_colori = deepcopy(colori)
+default_colori = deepcopy(colori)
 
 # flags and starting conditions
 palette = {}
@@ -266,6 +339,14 @@ clock = time.Clock()
 flagUndo = False
 screenshotsUndo = []
 screenshotsRedo = []
+img = image.load("picker/color_grid.png")
+#img = image.load("python_paint/picker/color_grid.png")
+image_rect = img.get_rect(topleft=(200, 0))
+selected_color = (255, 255, 255)
+r, g, b = selected_color[0], selected_color[1], selected_color[2]
+selected_color_coord = 0,0
+picking = False
+selected = False
 
 # Set up the display
 display.set_caption("PAINT IN PYTHON")
@@ -273,15 +354,20 @@ screen = display.set_mode([SCREEN_X, SCREEN_Y], DOUBLEBUF)
 background = (255, 255, 255)
 screen.fill(background)
 drawPalette(screen, colori, palette, selezione)
-draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo)
+draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker)
 
 # Radius selection
-r, centri = selectRadius(screen, 2)
+radius, centri = selectRadius(screen, 2)
 
 # Main loop
 while running:
     # get mouse position
     mp = mouse.get_pos()
+    if picking:
+        if 200 < mp[0] < 920 and mp[1] < 720:
+            mouse.set_cursor(3)
+        else:
+            mouse.set_cursor(0)
     #check events
     for e in event.get():
 
@@ -293,24 +379,33 @@ while running:
         if e.type == KEYDOWN:
 
             # rgb
-            if e.key == K_SPACE:
+            if e.key == K_SPACE and not picking:
                 bucket, rainbow = toggleRainbow(bucket, rainbow)
                 
             # fill
-            if e.key == K_b:
+            if e.key == K_b and not picking:
                 bucket, rainbow = toggleBucket(bucket, rainbow)
 
             # undo
-            if e.key == K_z and (key.get_mods() & KMOD_CTRL):
+            if e.key == K_z and (key.get_mods() & KMOD_CTRL) and not picking:
                 if (key.get_mods() & KMOD_CTRL) and (key.get_mods() & KMOD_SHIFT):
                     if screenshotsRedo:
                         undoRedo(screen, screenshotsRedo, screenshotsUndo, False)
                 elif screenshotsUndo:
                     undoRedo(screen, screenshotsUndo, screenshotsRedo, True)
 
+            if e.key == K_p:
+                if not picking:
+                    beforePick = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                    buildColorPicker(screen.subsurface(200,0,1080,720), colori, (255,255,255), selected)
+                    picking = True
+                else:
+                    picking = False
+                    mouse.set_cursor(0)
+                    screen.blit(beforePick, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
 
         # draw + fill
-        if mouse.get_pressed()[0] and mp[0] > 200 - r and mp[1] < SCREEN_Y-50 + r and not saving:
+        if mouse.get_pressed()[0] and mp[0] > 200 - radius and mp[1] < SCREEN_Y-50 + radius and not saving and not picking:
             if not flagUndo:
                 screenshot = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                 screenshotsUndo.append(screenshot)
@@ -330,16 +425,16 @@ while running:
                     if colorePrec:
                         colore = colorePrec
                         colorePrec = None
-                draw.circle(screen, colore, mp, r)
+                draw.circle(screen, colore, mp, radius)
                 drawPalette(screen, colori, palette, selezione)
-                draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo)
-                selectRadius(screen, (r//2)-2)
+                draw_toolbar(screen, salva, cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker)
+                selectRadius(screen, (radius//2)-2)
                 if rainbow:
                     drawRainbow(screen, True)
                 elif bucket:
                     drawBucket(screen, True, colore)
                 if last_pos:
-                    roundLine(screen, colore, mp, last_pos, r)
+                    roundLine(screen, colore, mp, last_pos, radius)
                 last_pos = mp
             else:
                 try:
@@ -349,7 +444,7 @@ while running:
                     pass
 
         # click outside canvas
-        if mouse.get_pressed()[0] and not (mp[0] > 200 - r and mp[1] < SCREEN_Y-50 + r ) and not saving:
+        if mouse.get_pressed()[0] and not (mp[0] > 200 - radius and mp[1] < SCREEN_Y-50 + radius ) and not saving and not picking:
             last_pos = None
 
         # release mouse
@@ -360,7 +455,7 @@ while running:
 
         if e.type == MOUSEBUTTONDOWN:
             # click change color
-            if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbow:
+            if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbow and not picking:
                 for k in palette:
                     if k[0] <= mp[0] <= k[1] and k[2] <= mp[1] <= k[3]:
                         
@@ -371,7 +466,7 @@ while running:
                         if bucket:
                             drawBucket(screen, bucket, colore)
             # click save
-            elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5:
+            elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not picking:
                 saving = True
                 screenshot = screen.subsurface(Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                 drawings_folder = select_directory()
@@ -397,7 +492,7 @@ while running:
             
             # click canc
             
-            elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving:
+            elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving and not picking:
                 screenshot = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                 screenshotsUndo.append(screenshot)
                 screenshotsRedo = []
@@ -406,27 +501,105 @@ while running:
                 reset()
 
             # click fill
-            elif 205 <= mp[0] <= 295 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
+            elif 205 <= mp[0] <= 295 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
                 bucket, rainbow = toggleBucket(bucket, rainbow)
 
             # click rgb
-            elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
+            elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
                 bucket, rainbow = toggleRainbow(bucket, rainbow)
             
             # click undo
-            elif 405 <= mp[0] <= 450 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
+            elif 405 <= mp[0] <= 450 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
                 if screenshotsUndo:
                     undoRedo(screen, screenshotsUndo, screenshotsRedo, True)
 
-            elif 455 <= mp[0] <= 500 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving:
+            elif 455 <= mp[0] <= 500 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
                 if screenshotsRedo:
                         undoRedo(screen, screenshotsRedo, screenshotsUndo, False)
 
+            elif 505 <= mp[0] <= 550 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+                beforePick = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                buildColorPicker(screen.subsurface(200,0,1080,720), colori, (255,255,255), selected)
+                picking = True
+
             # click circles to change size
-            elif mp[1] > SCREEN_Y-50:
+            elif mp[1] > SCREEN_Y-50 and not picking:
                 changeSize()
 
+        if picking:      
+            new_colori, nuovo_colore = buildColorPicker(screen.subsurface(200,0,1080,720), colori, selected_color, selected)  
+
+            if e.type == MOUSEBUTTONDOWN:
+                if 650 <= mp[1] <= 700:
+                    if 925 <= mp[0] <= 1015:
+                        colori = deepcopy(new_colori)
+                        palette = {}
+                        drawPalette(screen, colori, palette, selezione)
+                        selected = False
+                        if colore not in colori[0] and colore not in colori[1]:
+                            colore =  nuovo_colore
+                        picking = False
+                        mouse.set_cursor(0)
+                        screen.blit(beforePick, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+
+                    elif 1150 <= mp[0] <=1275:
+                        colori = deepcopy(default_colori)
+                        picking = False
+                        selected = False
+                        mouse.set_cursor(0)
+                        drawPalette(screen, colori, palette, selezione)
+                        screen.blit(beforePick, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+
+                elif 250 <= mp[1] <= 300:
+                    if 950 <= mp[0] <= 1250:
+                        colori = deepcopy(default_colori)
+                        new_colori = deepcopy(colori)
+                        palette = {}
+                        drawPalette(screen, colori, palette, selezione)
+                        selected = False
+
             
+            elif mouse.get_pressed()[0] or (e.type == MOUSEMOTION and e.buttons[0] == 1):
+                # Check if mouse is dragged while clicked within the image rect
+                if image_rect.collidepoint(mp[0],mp[1]):
+                    # Get the color of the pixel at the mouse position
+                    selected_color = img.get_at((mp[0] - image_rect.x, mp[1] - image_rect.y))
+                    r, g, b = selected_color[0], selected_color[1], selected_color[2]
+                    if selected:
+                        colori[selected_color_coord[0]][selected_color_coord[1]] = selected_color
+                        draw.rect(screen, selected_color, colored_square)
+                        draw.rect(screen, (50, 50, 50), colored_square, 3)
+
+                # Check if mouse is clicked within color palette squares
+                elif 110 <= mp[1] <= 220 and 930 <= mp[0] <= 1270:
+                    for j in range(len(colori[0])):
+                        for i in range(len(colori)):
+                            color_rect = Rect(930 + 58 * j, 110 + 58 * i, 50, 50)
+                            draw.rect(screen, colori[i][j], color_rect)
+                            if color_rect.collidepoint(mp):
+                                selected_square = draw.rect(screen, (50, 50, 50), color_rect, 3)
+                                colored_square = color_rect
+                                selected_color = colori[i][j]
+                                r, g, b = selected_color[0], selected_color[1], selected_color[2]
+                                selected = True
+                                selected_color_coord = i, j
+
+                # Check if mouse is clicked on the sliders
+                elif 960 <= mp[0] <= 1218:
+                    if 400 <= mp[1] <= 420:
+                        r = get_slider_value(mp[0], 960)
+                    elif 450 <= mp[1] <= 470:
+                        g = get_slider_value(mp[0], 960)
+                    elif 500 <= mp[1] <= 520:
+                        b = get_slider_value(mp[0], 960)
+                    selected_color = (r, g, b)
+                    if selected:
+                        colori[selected_color_coord[0]][selected_color_coord[1]] = selected_color
+                        draw.rect(screen, selected_color, colored_square)
+                        draw.rect(screen, (50, 50, 50), colored_square, 3)
+
+            
+
     # draw everything
     display.flip()
     clock.tick(144)
