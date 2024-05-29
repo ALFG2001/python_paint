@@ -141,10 +141,13 @@ def selectRadius(screen, selected):
     draw.rect(screen, (50, 50, 50), (SCREEN_X-250, SCREEN_Y - 50, SCREEN_X, 50))
     colori = [(255,255,255),(255,255,255),(255,255,255)]
     colori.insert(selected, (0,0,0))
+    colori_bordo = [(0,0,0),(0,0,0),(0,0,0)]
+    colori_bordo.insert(selected, (255,255,255))
     centri = []
     for i in range(4):
         rad = (i+2)*2
         draw.circle(screen, colori[i], ((SCREEN_X-200)+50*i,(SCREEN_Y-25)), rad)
+        draw.circle(screen, colori_bordo[i], ((SCREEN_X-200)+50*i,(SCREEN_Y-25)), rad+1, 2)
         centri.append(((SCREEN_X-200)+50*i,SCREEN_Y-25))
     return (selected+2)*2, centri
 
