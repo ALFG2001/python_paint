@@ -1,7 +1,7 @@
 from pygame import *
 from os import path, makedirs
 from glob import glob
-from tkinter import Tk, simpledialog, filedialog
+from tkinter import Tk, simpledialog, filedialog, messagebox
 from copy import deepcopy
 from PIL import Image
 
@@ -58,6 +58,14 @@ def select_image():
         root.iconify()
         root.destroy()
         return file_path
+
+# Asks if the user wants to quit
+def ask_yes_no():
+    answer = messagebox.askyesno("Prompt", "Do you want to quit?")
+    if answer:
+        return False
+    else:
+        return True
 
 # blits the chosen image one the canvas
 def display_image(screen, file_path):
@@ -456,7 +464,7 @@ while running:
 
         # quit
         if e.type == QUIT:
-            running = False
+            running = ask_yes_no()
 
         # press button on keyboard (space or b)
         if e.type == KEYDOWN:
