@@ -94,20 +94,20 @@ def rainbowColor(value):
         return (255, 0, 255-pos)
 
 # Draws rainbow icon
-def drawRainbow(screen, r):
+def drawRainbow(screen, rainbowFlag):
     """Draws rainbow icon."""
-    if r:
+    if rainbowFlag:
         for i, color in enumerate([(255, 0, 0), (255, 165, 0), (255, 255, 0), (0, 255, 0), (0, 0, 255), (75, 0, 130), (238, 130, 238)]):
             draw.circle(screen, color, (100, 690), 80 - i * 10, width=10, draw_top_right=True, draw_top_left=True)
     else:
         draw.rect(screen, (150,150,150), (20,610, 160, 80))
 
 # Function to draw fill tool icon
-def drawBucket(screen, b, c):
+def drawBucket(screen, bucketFlag, selectedColor):
     """Draws fill tool icon."""
-    if b:
+    if bucketFlag:
         draw.rect(screen, (50,50,50), (50, 610, 100, 80), border_radius=5)
-        draw.polygon(screen, c, ((55,615), (145,615),(120, 635),(100, 640), (80, 635)))
+        draw.polygon(screen, selectedColor, ((55,615), (145,615),(120, 635),(100, 640), (80, 635)))
     else:
         draw.rect(screen, (150,150,150), (20,610, 160, 80))
 
@@ -170,23 +170,23 @@ def draw_toolbar(listaBlit):
 # Resets the screen and tools to default state
 def reset():
     """Resets the screen and tools to default state."""
-    global colore, radius, rainbow, bucket, colorePrec, selezione, listText
-    colori = deepcopy(default_colori)
+    global colore, radius, rainbowStatus, bucketStatus, colorePrec, selectedPaletteCoord, listText, colori, new_colori
     palette = {}
-    selezione = (0,0)
+    selectedPaletteCoord = (0,0)
     screen.fill(background)
-    drawPalette(screen, colori, palette, selezione)
+    drawPalette(screen, colori, palette, selectedPaletteCoord)
     draw_toolbar(listText)
     colore = (0,0,0)
     radius = selectRadius(screen, 2)[0]
-    rainbow = False
-    bucket = False
+    rainbowStatus = False
+    bucketStatus = False
     mouse.set_cursor(Cursor(0))
     colorePrec = None
 
 # Flood fill algorithm to fill an area with a color
 def floodFill(surface, position, fill_color):
     """Flood fill algorithm to fill an area with a color."""
+    mouse.set_cursor(2)
     fill_color = surface.map_rgb(fill_color)
     surf_array = surfarray.pixels2d(surface)
     current_color = surf_array[position]
@@ -206,42 +206,43 @@ def floodFill(surface, position, fill_color):
         frontier.append((x, y - 1))  # Up.
 
     surfarray.blit_array(surface, surf_array)
+    mouse.set_cursor(Cursor(11))
 
 # Toggles rainbow mode
-def toggleRainbow(bucket, rainbow):
+def toggleRainbow(bucketFlag, rainbowFlag):
     """Toggles rainbow mode."""
     global color_value, colore, colorePrec
-    if bucket:
+    if bucketFlag:
         mouse.set_cursor(Cursor(0))
-        bucket = False
-        drawBucket(screen, bucket, colore)
-    if not rainbow:
-        rainbow = True
+        bucketFlag = False
+        drawBucket(screen, bucketFlag, colore)
+    if not rainbowFlag:
+        rainbowFlag = True
     else:
-        rainbow = False
+        rainbowFlag = False
         color_value = 0
         if colorePrec:
             colore = colorePrec
             colorePrec = None
-    drawRainbow(screen, rainbow)
-    return bucket, rainbow
+    drawRainbow(screen, rainbowFlag)
+    return bucketFlag, rainbowFlag
 
 # Toggles fill bucket mode
-def toggleBucket(bucket, rainbow):
+def toggleBucket(bucketFlag, rainbowFlag):
     """Toggles fill bucket mode."""
     global colore, colorePrec
-    if rainbow:
-        rainbow = False
+    if rainbowFlag:
+        rainbowFlag = False
         colore = colorePrec
-        drawRainbow(screen, rainbow)
-    if not bucket:
-        bucket = True
+        drawRainbow(screen, rainbowFlag)
+    if not bucketFlag:
+        bucketFlag = True
         mouse.set_cursor(Cursor(11))
     else:
-        bucket = False
+        bucketFlag = False
         mouse.set_cursor(Cursor(0))
-    drawBucket(screen, bucket, colore)
-    return bucket, rainbow
+    drawBucket(screen, bucketFlag, colore)
+    return bucketFlag, rainbowFlag
 
 # Changes the size of the drawing tool
 def changeSize():
@@ -299,7 +300,7 @@ def get_slider_value(mouse_x, slider_x):
 def buildColorPicker(window, colori:list, selected_color, selected):
     """Build the color picker interface."""
     myfont = font.SysFont("segoeuisymbol", 30)
-    window.blit(img, (0, 0))  # Display the color grid image
+    window.blit(colorPickerGrid, (0, 0))  # Display the color grid image
 
     draw.rect(window, (50, 50, 50), (720, 0, 360, 720))  # Sidebar background
 
@@ -405,25 +406,25 @@ new_colori = deepcopy(colori)
 default_colori = deepcopy(colori)
 
 # flags and starting conditions
-palette = {}
+coordPalette = {}
 running = True
 saving = False
 colore = (0,0,0)
 colorePrec = None
 last_pos = None
 color_value = 0
-rainbow = False
-bucket = False
-selezione = (0,0)
+rainbowStatus = False
+bucketStatus = False
+selectedPaletteCoord = (0,0)
 clock = time.Clock()
 flagUndo = False
 screenshotsUndo = []
 screenshotsRedo = []
 try:
-    img = image.load("picker/color_grid.png")
+    colorPickerGrid = image.load("picker/color_grid.png")
 except FileNotFoundError:
-    img = image.load("python_paint/picker/color_grid.png")
-image_rect = img.get_rect(topleft=(200, 0))
+    colorPickerGrid = image.load("python_paint/picker/color_grid.png")
+colorPickerGrid_rect = colorPickerGrid.get_rect(topleft=(200, 0))
 selected_color = (255, 255, 255)
 r, g, b = selected_color[0], selected_color[1], selected_color[2]
 selected_color_coord = 0,0
@@ -435,7 +436,7 @@ display.set_caption("PAINT IN PYTHON")
 screen = display.set_mode([SCREEN_X, SCREEN_Y], DOUBLEBUF)
 background = (255, 255, 255)
 screen.fill(background)
-drawPalette(screen, colori, palette, selezione)
+drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
 draw_toolbar(listText)
 
 # Radius selection
@@ -462,11 +463,11 @@ while running:
 
             # rgb
             if e.key == K_SPACE and not picking:
-                bucket, rainbow = toggleRainbow(bucket, rainbow)
+                bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
                 
             # fill
             if e.key == K_b and not picking:
-                bucket, rainbow = toggleBucket(bucket, rainbow)
+                bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
 
             # undo
             if e.key == K_z and (key.get_mods() & KMOD_CTRL) and not picking:
@@ -477,6 +478,10 @@ while running:
                     undoRedo(screen, screenshotsUndo, screenshotsRedo, True)
 
             if e.key == K_p:
+                if bucketStatus:
+                    bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
+                elif rainbowStatus:
+                    bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
                 if not picking:
                     beforePick = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                     buildColorPicker(screen.subsurface(200,0,1080,720), colori, (255,255,255), selected)
@@ -499,8 +504,8 @@ while running:
                 draw_toolbar(listText)
                 if len(screenshotsUndo) > 20:
                     screenshotsUndo.pop(0)
-            if not bucket:
-                if rainbow:
+            if not bucketStatus:
+                if rainbowStatus:
                     if not colorePrec:
                         colorePrec = colore
                     color_value = (color_value + 8) % (256 * 6)
@@ -510,19 +515,19 @@ while running:
                         colore = colorePrec
                         colorePrec = None
                 draw.circle(screen, colore, mp, radius)
-                drawPalette(screen, colori, palette, selezione)
+                drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
                 draw_toolbar(listText)
                 selectRadius(screen, (radius//2)-2)
-                if rainbow:
+                if rainbowStatus:
                     drawRainbow(screen, True)
-                elif bucket:
+                elif bucketStatus:
                     drawBucket(screen, True, colore)
                 if last_pos:
                     roundLine(screen, colore, mp, last_pos, radius)
                 last_pos = mp
             else:
                 try:
-                    if screen.get_at(mp)[:3] != colore and not rainbow and mp[0] > 200 and mp[1] < SCREEN_Y-50:
+                    if screen.get_at(mp)[:3] != colore and not rainbowStatus and mp[0] > 200 and mp[1] < SCREEN_Y-50:
                         floodFill(screen, mp, colore)
                 except:
                     pass
@@ -539,16 +544,16 @@ while running:
 
         if e.type == MOUSEBUTTONDOWN:
             # click change color
-            if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbow and not picking:
-                for k in palette:
+            if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbowStatus and not picking:
+                for k in coordPalette:
                     if k[0] <= mp[0] <= k[1] and k[2] <= mp[1] <= k[3]:
                         
-                        colore = palette[k]
+                        colore = coordPalette[k]
                         colorePrec = colore
-                        selezione = (k[0]-5,k[2]-5)
-                        drawPalette(screen, colori, palette, selezione)
-                        if bucket:
-                            drawBucket(screen, bucket, colore)
+                        selectedPaletteCoord = (k[0]-5,k[2]-5)
+                        drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
+                        if bucketStatus:
+                            drawBucket(screen, bucketStatus, colore)
 
             # click save
             elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not picking:
@@ -602,11 +607,11 @@ while running:
 
             # click fill
             elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                bucket, rainbow = toggleBucket(bucket, rainbow)
+                bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
 
             # click rgb
             elif 405 <= mp[0] <= 495 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                bucket, rainbow = toggleRainbow(bucket, rainbow)
+                bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
             
             # click undo
             elif 505 <= mp[0] <= 550 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
@@ -618,6 +623,10 @@ while running:
                         undoRedo(screen, screenshotsRedo, screenshotsUndo, False)
 
             elif 605 <= mp[0] <= 650 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+                if bucketStatus:
+                    bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
+                elif rainbowStatus:
+                    bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
                 beforePick = save_canvas(screen, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                 buildColorPicker(screen.subsurface(200,0,1080,720), colori, (255,255,255), selected)
                 picking = True
@@ -633,8 +642,8 @@ while running:
                 if 650 <= mp[1] <= 700:
                     if 925 <= mp[0] <= 1015:
                         colori = deepcopy(new_colori)
-                        palette = {}
-                        drawPalette(screen, colori, palette, selezione)
+                        coordPalette = {}
+                        drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
                         selected = False
                         if colore not in colori[0] and colore not in colori[1]:
                             colore =  nuovo_colore
@@ -647,15 +656,15 @@ while running:
                         picking = False
                         selected = False
                         mouse.set_cursor(0)
-                        drawPalette(screen, colori, palette, selezione)
+                        drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
                         screen.blit(beforePick, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
 
                 elif 250 <= mp[1] <= 300:
                     if 950 <= mp[0] <= 1250:
                         colori = deepcopy(default_colori)
                         new_colori = deepcopy(colori)
-                        palette = {}
-                        drawPalette(screen, colori, palette, selezione)
+                        coordPalette = {}
+                        drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
                         colore = colori[coord_colore[0]][coord_colore[1]]
                         selected = False
                     
@@ -669,6 +678,7 @@ while running:
                                 selected_square = draw.rect(screen, (50, 50, 50), color_rect, 3)
                                 colored_square = color_rect
                                 selected_color = colori[i][j]
+                                colorePrec = None
                                 r, g, b = selected_color[0], selected_color[1], selected_color[2]
                                 selected = True
                                 selected_color_coord = i, j
@@ -676,9 +686,9 @@ while running:
             
             elif mouse.get_pressed()[0] and (e.type == MOUSEMOTION and e.buttons[0] == 1):
                 # Check if mouse is dragged while clicked within the image rect
-                if image_rect.collidepoint(mp[0],mp[1]):
+                if colorPickerGrid_rect.collidepoint(mp[0],mp[1]):
                     # Get the color of the pixel at the mouse position
-                    selected_color = img.get_at((mp[0] - image_rect.x, mp[1] - image_rect.y))
+                    selected_color = colorPickerGrid.get_at((mp[0] - colorPickerGrid_rect.x, mp[1] - colorPickerGrid_rect.y))
                     r, g, b = selected_color[0], selected_color[1], selected_color[2]
                     if selected:
                         colori[selected_color_coord[0]][selected_color_coord[1]] = selected_color
