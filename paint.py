@@ -253,7 +253,7 @@ def toggleBucket(bucketFlag, rainbowFlag):
     return bucketFlag, rainbowFlag
 
 # Changes the size of the drawing tool
-def changeSize():
+def changeSize(mp):
     """Changes the size of the drawing tool."""
     global radius
     click = screen.get_at(mp) == (255,255,255)
@@ -641,7 +641,7 @@ while running:
 
             # click circles to change size
             elif mp[1] > SCREEN_Y-50 and not picking:
-                changeSize()
+                changeSize(mp)
 
         if picking:      
             new_colori, nuovo_colore, coord_colore = buildColorPicker(screen.subsurface(200,0,1080,720), colori, selected_color, selected)  
