@@ -1,11 +1,4 @@
-from pygame import (
-    image, transform, draw, Rect, mouse,
-    Cursor, surfarray, font, init, time,
-    display, DOUBLEBUF, event, QUIT, KEYDOWN,
-    K_SPACE, K_b, K_z, key, KMOD_CTRL, KMOD_SHIFT,
-    K_p, MOUSEBUTTONUP, MOUSEBUTTONDOWN, error, MOUSEMOTION,
-    K_PLUS, K_MINUS
-    )
+from pygame import *
 from os import path, makedirs
 from glob import glob
 from tkinter import Tk, simpledialog, filedialog, messagebox
