@@ -1,4 +1,11 @@
-from pygame import *
+from pygame import (
+    image, transform, draw, Rect, mouse,
+    Cursor, surfarray, font, init, time,
+    display, DOUBLEBUF, event, QUIT, KEYDOWN,
+    K_SPACE, K_b, K_z, key, KMOD_CTRL, KMOD_SHIFT,
+    K_p, MOUSEBUTTONUP, MOUSEBUTTONDOWN, error, MOUSEMOTION,
+    K_PLUS, K_MINUS
+    )
 from os import path, makedirs
 from glob import glob
 from tkinter import Tk, simpledialog, filedialog, messagebox
@@ -304,7 +311,7 @@ def get_slider_value(mouse_x, slider_x):
     """Calculate the slider value based on mouse position."""
     return max(0, min(255, mouse_x - slider_x))
 
-# Bilds the color picker
+# Builds the color picker
 def buildColorPicker(window, colori:list, selected_color, selected):
     """Build the color picker interface."""
     myfont = font.SysFont("segoeuisymbol", 30)
@@ -469,23 +476,24 @@ while running:
         # press button on keyboard (space or b)
         if e.type == KEYDOWN:
 
-            # rgb
+            # rgb SPACE
             if e.key == K_SPACE and not picking:
                 bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
                 
-            # fill
-            if e.key == K_b and not picking:
+            # fill B
+            elif e.key == K_b and not picking:
                 bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
 
-            # undo
-            if e.key == K_z and (key.get_mods() & KMOD_CTRL) and not picking:
+            # undo CTRL Z redo SHIFT CTRL Z
+            elif e.key == K_z and (key.get_mods() & KMOD_CTRL) and not picking:
                 if (key.get_mods() & KMOD_CTRL) and (key.get_mods() & KMOD_SHIFT):
                     if screenshotsRedo:
                         undoRedo(screen, screenshotsRedo, screenshotsUndo, False)
                 elif screenshotsUndo:
                     undoRedo(screen, screenshotsUndo, screenshotsRedo, True)
-
-            if e.key == K_p:
+                    
+            # picker P
+            elif e.key == K_p:
                 if bucketStatus:
                     bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
                 elif rainbowStatus:
@@ -498,6 +506,16 @@ while running:
                     picking = False
                     mouse.set_cursor(0)
                     screen.blit(beforePick, Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+        
+            # increase size +
+            elif e.key == K_PLUS:
+                if (radius//2)-2 < 3:
+                    radius = selectRadius(screen, (radius//2)-2 +1)[0]
+
+            # decrease size -     
+            elif e.key == K_MINUS:
+                if (radius//2)-2 > 0:
+                    radius = selectRadius(screen, (radius//2)-2 -1)[0]
 
         # draw + fill
         if mouse.get_pressed()[0] and mp[0] > 200 - radius and mp[1] < SCREEN_Y-50 + radius and not saving and not picking:
