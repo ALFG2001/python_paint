@@ -200,27 +200,45 @@ def reset():
 
 # Flood fill algorithm to fill an area with a color
 def floodFill(surface, position, fill_color):
-    """Flood fill algorithm to fill an area with a color."""
+    """Fast scanline flood fill algorithm for Pygame surfaces."""
     mouse.set_cursor(2)
-    fill_color = surface.map_rgb(fill_color)
-    surf_array = surfarray.pixels2d(surface)
-    current_color = surf_array[position]
+    arr = surfarray.pixels2d(surface)
+    x, y = position
+    w, h = arr.shape
+    orig_color = arr[x, y]
+    fill_color_mapped = surface.map_rgb(fill_color)
 
-    frontier = [position]
-    while len(frontier) > 0:
-        x, y = frontier.pop()
-        try:
-            if surf_array[x, y] != current_color:
-                continue
-        except IndexError:
+    if orig_color == fill_color_mapped:
+        mouse.set_cursor(Cursor(11))
+        return
+
+    stack = [(x, y)]
+    while stack:
+        nx, ny = stack.pop()
+        if nx < 0 or nx >= w or ny < 0 or ny >= h:
             continue
-        surf_array[x, y] = fill_color
-        frontier.append((x + 1, y))  # Right.
-        frontier.append((x - 1, y))  # Left.
-        frontier.append((x, y + 1))  # Down.
-        frontier.append((x, y - 1))  # Up.
+        if arr[nx, ny] != orig_color:
+            continue
 
-    surfarray.blit_array(surface, surf_array)
+        west = nx
+        east = nx
+
+        # Move west as far as we can and fill
+        while west > 0 and arr[west - 1, ny] == orig_color:
+            west -= 1
+        # Move east as far as we can and fill
+        while east < w - 1 and arr[east + 1, ny] == orig_color:
+            east += 1
+
+        # Fill the scanline and queue north/south neighbors
+        for i in range(west, east + 1):
+            arr[i, ny] = fill_color_mapped
+            if ny > 0 and arr[i, ny - 1] == orig_color:
+                stack.append((i, ny - 1))
+            if ny < h - 1 and arr[i, ny + 1] == orig_color:
+                stack.append((i, ny + 1))
+
+    surfarray.blit_array(surface, arr)
     mouse.set_cursor(Cursor(11))
 
 # Toggles rainbow mode
