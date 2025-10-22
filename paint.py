@@ -5,34 +5,31 @@ from tkinter import Tk, simpledialog, filedialog, messagebox
 from copy import deepcopy
 from PIL import Image
 
-# Opens a dialog to select a directory
-def select_directory():
-    """Opens a dialog to select a directory."""
+# Opens a dialog to save
+def select_save_file():
+    """Opens a file explorer to select folder and enter file name."""
     root = Tk()
-    root.withdraw()  # Hide the root window
-    folder_selected = filedialog.askdirectory()
-    root.iconify()
+    root.withdraw()  # Nasconde la finestra principale
+    file_path = filedialog.asksaveasfilename(
+        title="Save as",
+        defaultextension=".png",  # o altra estensione di default
+        filetypes=[("Image files", "*.png"), ("All files", "*.*")]
+    )
     root.destroy()
-    return folder_selected
-
-# Prompts the user to enter a file name
-def prompt_file_name():
-    """Prompts the user to enter a file name."""
-    root = Tk()
-    root.withdraw()  # Hide the root window
-    file_name = simpledialog.askstring("Input", f"Save as:")
-    return file_name
+    return file_path
 
 # makes you choose an image from the computer
 def select_image():
     # Create a Tkinter root window (it will be hidden)
     root = Tk()
     root.withdraw()  # Hide the root window
+        
+    image_extensions = tuple(Image.registered_extensions().keys())
 
     # Open file dialog to select an image file
     file_path = filedialog.askopenfilename(
         title="Select an image file",
-        filetypes=[("Image files", "*.png;*.jpg;*.jpeg")]
+        filetypes=[("Image files", image_extensions)]
     )
 
     # Check if a file was selected
@@ -41,9 +38,9 @@ def select_image():
         root.destroy()
         return None
 
-    # If the selected file is a JPG, convert it to PNG
-    if file_path.lower().endswith(('.jpg', '.jpeg')):
-        # Open the JPG image
+    # If the selected file is not a PNG, convert it to PNG
+    if file_path.lower().endswith(image_extensions) and file_path.lower().endswith('.png'):
+        # Open the image
         image = Image.open(file_path)
         # Change the file extension to .png
         png_file_path = file_path.rsplit('.', 1)[0] + '.png'
@@ -67,13 +64,31 @@ def ask_yes_no():
     else:
         return True
 
-# blits the chosen image one the canvas
 def display_image(screen, file_path):
-    # Load the image
+    reset()
+
     img = pygame.image.load(file_path)
-    # Scale the image to fit the window, maintaining aspect ratio
-    img = pygame.transform.scale(img, (1080, 720))
-    screen.blit(img, (0, 0))
+
+    # Dimensioni originali dell'immagine
+    img_width, img_height = img.get_size()
+
+    # Altezza target
+    target_height = 720
+    scale_ratio = target_height / img_height
+    new_width = int(img_width * scale_ratio)
+    new_height = target_height
+
+    # Scala l'immagine
+    img = pygame.transform.scale(img, (new_width, new_height))
+
+    # Dimensioni della finestra
+    win_width, win_height = screen.get_size()
+
+    # Posizione per centrare l'immagine
+    x = (win_width - new_width) // 2
+    y = (win_height - new_height) // 2
+
+    screen.blit(img, (x, y))
 
 # Counts files by their type in a given folder
 def count_files_by_type(folder_path, file_extension):
@@ -455,8 +470,94 @@ def shortcut(event):
         if (radius//2)-2 > 0:
             radius = selectRadius(screen, (radius//2)-2 -1)[0]
 
-def mousePressed(event):
-    pass
+def mousePressed():
+    global colore, colorePrec, selectedPaletteCoord, saving, bucketStatus, rainbowStatus, picking, screenshot 
+    global drawings_folder, screenshotsUndo, screenshotsRedo, flagUndo, tastoUndo, tastoRedo, listText, selected_image
+    global salva, apri, cancella, riempi, arcobaleno, tastoPicker, SCREEN_X, SCREEN_Y, coordPalette, colori
+
+    # click change color
+    if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbowStatus and not picking:
+        for k in coordPalette:
+            if k[0] <= mp[0] <= k[1] and k[2] <= mp[1] <= k[3]:
+                
+                colore = coordPalette[k]
+                colorePrec = colore
+                selectedPaletteCoord = (k[0]-5,k[2]-5)
+                drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
+                if bucketStatus:
+                    drawBucket(screen, bucketStatus, colore)
+
+    # click save
+    elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not picking:
+        saving = True
+        screenshot = screen.subsurface(pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+        save_path = select_save_file()
+        try:
+            pygame.image.save(screenshot, save_path)
+        except pygame.error:
+            makedirs(drawings_folder)
+            pygame.image.save(screenshot, save_path)
+        saving = False
+    
+    # click open
+    elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving and not picking:
+        selected_image = select_image()
+        if selected_image:
+            if not flagUndo:
+                screenshot = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                screenshotsUndo.append(screenshot)
+                screenshotsRedo = []
+                flagUndo = True
+                tastoUndo = myfont.render('↩', True, (50,50,50))
+                tastoRedo = myfont.render('↪', True, (150,150,150))
+                listText = [salva,  apri,cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker]
+                draw_toolbar(listText)
+                if len(screenshotsUndo) > 20:
+                    screenshotsUndo.pop(0)
+            display_image(screen.subsurface(pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50)),selected_image)
+
+    # click canc 
+    elif 205 <= mp[0] <= 295 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving and not picking:
+        screenshot = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+        screenshotsUndo.append(screenshot)
+        screenshotsRedo = []
+        tastoUndo = myfont.render('↩', True, (50,50,50))
+        tastoRedo = myfont.render('↪', True, (150,150,150))
+        listText = [salva,  apri,cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker]
+        reset()
+
+    # click fill
+    elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+        bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
+
+    # click rgb
+    elif 405 <= mp[0] <= 495 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+        bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
+    
+    # click undo
+    elif 505 <= mp[0] <= 550 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+        if screenshotsUndo:
+            undoRedo(screen, screenshotsUndo, screenshotsRedo, True)
+
+    # click redo
+    elif 555 <= mp[0] <= 600 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+        if screenshotsRedo:
+                undoRedo(screen, screenshotsRedo, screenshotsUndo, False)
+
+    # click color picker
+    elif 605 <= mp[0] <= 650 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
+        if bucketStatus:
+            bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
+        elif rainbowStatus:
+            bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
+        beforePick = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+        buildColorPicker(screen.subsurface(200,0,1080,720), colori, (255,255,255), selected)
+        picking = True
+
+    # click circles to change size
+    elif mp[1] > SCREEN_Y-50 and not picking:
+        changeSize(mp)
+    
 
 # Initialize Pygame
 pygame.init()
@@ -568,6 +669,11 @@ while running:
                             colore = colorePrec
                             colorePrec = None
                     pygame.draw.circle(screen, colore, mp, radius)
+                    
+                    draw_toolbar(listText)
+                    selectRadius(screen, (radius//2)-2)
+                    drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
+
                     if rainbowStatus:
                         drawRainbow(screen, True)
                     elif bucketStatus:
@@ -575,9 +681,6 @@ while running:
                     if last_pos:
                         roundLine(screen, colore, mp, last_pos, radius)
 
-                    draw_toolbar(listText)
-                    selectRadius(screen, (radius//2)-2)
-                    drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
 
                     last_pos = mp
                 else:
@@ -598,99 +701,7 @@ while running:
 
         # click buttons
         if e.type == pygame.MOUSEBUTTONDOWN:
-            # click change color
-            if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbowStatus and not picking:
-                for k in coordPalette:
-                    if k[0] <= mp[0] <= k[1] and k[2] <= mp[1] <= k[3]:
-                        
-                        colore = coordPalette[k]
-                        colorePrec = colore
-                        selectedPaletteCoord = (k[0]-5,k[2]-5)
-                        drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
-                        if bucketStatus:
-                            drawBucket(screen, bucketStatus, colore)
-
-            # click save
-            elif 5 <= mp[0] <= 95 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not picking:
-                saving = True
-                screenshot = screen.subsurface(pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
-                drawings_folder = select_directory()
-                if drawings_folder:
-                    count = count_files_by_type(drawings_folder, "png")
-                    default_name = f"{count}"
-                    file_name = prompt_file_name()
-                    if file_name != None:
-                        if not file_name:
-                            filename = f"{default_name}-drawing.png"
-                        else:
-                            filename = f"{default_name}-{file_name}.png"
-
-                        save_path = path.join(drawings_folder, filename)
-                        try:
-                            pygame.image.save(screenshot, save_path)
-                        except pygame.error:
-                            makedirs(drawings_folder)
-                            pygame.image.save(screenshot, save_path)
-                saving = False
-            
-            # click open
-            elif 105 <= mp[0] <= 195 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving and not picking:
-                selected_image = select_image()
-                if selected_image:
-                    if not flagUndo:
-                        screenshot = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
-                        screenshotsUndo.append(screenshot)
-                        screenshotsRedo = []
-                        flagUndo = True
-                        tastoUndo = myfont.render('↩', True, (50,50,50))
-                        tastoRedo = myfont.render('↪', True, (150,150,150))
-                        listText = [salva,  apri,cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker]
-                        draw_toolbar(listText)
-                        if len(screenshotsUndo) > 20:
-                            screenshotsUndo.pop(0)
-                    display_image(screen.subsurface(pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50)),selected_image)
-
-            # click canc 
-            elif 205 <= mp[0] <= 295 and SCREEN_Y-50+5 <= mp[1] <= SCREEN_Y-5 and not saving and not picking:
-                screenshot = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
-                screenshotsUndo.append(screenshot)
-                screenshotsRedo = []
-                tastoUndo = myfont.render('↩', True, (50,50,50))
-                tastoRedo = myfont.render('↪', True, (150,150,150))
-                listText = [salva,  apri,cancella, riempi, arcobaleno, tastoUndo, tastoRedo, tastoPicker]
-                reset()
-
-            # click fill
-            elif 305 <= mp[0] <= 395 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
-
-            # click rgb
-            elif 405 <= mp[0] <= 495 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
-            
-            # click undo
-            elif 505 <= mp[0] <= 550 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                if screenshotsUndo:
-                    undoRedo(screen, screenshotsUndo, screenshotsRedo, True)
-
-            # click redo
-            elif 555 <= mp[0] <= 600 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                if screenshotsRedo:
-                        undoRedo(screen, screenshotsRedo, screenshotsUndo, False)
-
-            # click color picker
-            elif 605 <= mp[0] <= 650 and SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10 and not saving and not picking:
-                if bucketStatus:
-                    bucketStatus, rainbowStatus = toggleBucket(bucketStatus, rainbowStatus)
-                elif rainbowStatus:
-                    bucketStatus, rainbowStatus = toggleRainbow(bucketStatus, rainbowStatus)
-                beforePick = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
-                buildColorPicker(screen.subsurface(200,0,1080,720), colori, (255,255,255), selected)
-                picking = True
-
-            # click circles to change size
-            elif mp[1] > SCREEN_Y-50 and not picking:
-                changeSize(mp)
+            mousePressed()
 
         if picking:      
             new_colori, nuovo_colore, coord_colore = buildColorPicker(screen.subsurface(200,0,1080,720), colori, selected_color, selected)  
@@ -698,7 +709,7 @@ while running:
             if e.type == pygame.MOUSEBUTTONDOWN:
 
                 # Click Save or Quit
-                if 650 <= mp[1] <= 700 and 925 <= mp[0] <=1275:
+                if 650 <= mp[1] <= 700:
 
                     # Click Save Button
                     if 925 <= mp[0] <= 1015:
@@ -726,20 +737,19 @@ while running:
                         drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
                         screen.blit(beforePick, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
 
-                elif 250 <= mp[1] <= 300:
+                # Click Default Palette
+                elif 250 <= mp[1] <= 300 and 950 <= mp[0] <= 1250:
 
-                    # Click Default Palette
-                    if 950 <= mp[0] <= 1250:
-                        undo_default_colori = deepcopy(colori)
-                        colori = deepcopy(default_colori)
-                        new_colori = deepcopy(colori)
-                        coordPalette = {}
-                        drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
-                        colore = colori[coord_colore[0]][coord_colore[1]]
-                        selected_color = colore
-                        r, g, b = selected_color[0], selected_color[1], selected_color[2]
-                        selected = False
-                        defaultPalette = True
+                    undo_default_colori = deepcopy(colori)
+                    colori = deepcopy(default_colori)
+                    new_colori = deepcopy(colori)
+                    coordPalette = {}
+                    drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
+                    colore = colori[coord_colore[0]][coord_colore[1]]
+                    selected_color = colore
+                    r, g, b = selected_color[0], selected_color[1], selected_color[2]
+                    selected = False
+                    defaultPalette = True
 
                 # Check if mouse is clicked within color palette squares
                 elif 110 <= mp[1] <= 220 and 930 <= mp[0] <= 1270:
@@ -756,6 +766,7 @@ while running:
                                 selected = True
                                 selected_color_coord = i, j
  
+            # mouse + movement
             elif pygame.mouse.get_pressed()[0] and (e.type == pygame.MOUSEMOTION and e.buttons[0] == 1):
                 # Check if mouse is dragged while clicked within the image rect
                 if colorPickerGrid_rect.collidepoint(mp[0],mp[1]) and not onSliders:
