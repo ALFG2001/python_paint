@@ -61,7 +61,7 @@ def select_image():
 
 # Asks if the user wants to quit
 def ask_yes_no():
-    answer = messagebox.askyesno("Prompt", "Do you want to quit?")
+    answer = messagebox.askyesno(message="Do you want to quit?")
     if answer:
         return False
     else:
@@ -476,7 +476,7 @@ def shortcut(event):
 def mousePressed():
     global colore, colorePrec, selectedPaletteCoord, saving, bucketStatus, rainbowStatus, picking, screenshot 
     global drawings_folder, screenshotsUndo, screenshotsRedo, flagUndo, tastoUndo, tastoRedo, listText, selected_image
-    global salva, apri, cancella, riempi, arcobaleno, tastoPicker, SCREEN_X, SCREEN_Y, coordPalette, colori
+    global salva, apri, cancella, riempi, arcobaleno, tastoPicker, SCREEN_X, SCREEN_Y, coordPalette, colori, beforePick
 
     # click change color
     if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbowStatus and not picking:
@@ -615,6 +615,7 @@ selected = False
 onPicker = False
 onSliders = False
 defaultPalette = False
+wait = 0
 
 # Set up the display
 pygame.display.set_caption("PAINT IN PYTHON")
@@ -650,7 +651,7 @@ while running:
 
         # draw + fill
         if pygame.mouse.get_pressed()[0] and not saving and not picking:
-            if mp[0] > 200 - radius and mp[1] < SCREEN_Y-50 + radius:
+            if mp[0] > 200 - radius and mp[1] < SCREEN_Y-50 + radius and wait == 0:
                 if not flagUndo:
                     screenshot = save_canvas(screen, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
                     screenshotsUndo.append(screenshot)
@@ -725,14 +726,14 @@ while running:
                         selected_color = (255, 255, 255)
                         if colore not in colori[0] and colore not in colori[1]:
                             colore =  nuovo_colore
-                        picking = False
                         pygame.mouse.set_cursor(0)
                         screen.blit(beforePick, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                        picking = False
+                        wait = 30
 
                     # Click Quit Button
                     elif 1150 <= mp[0] <=1275:
                         colori = deepcopy(default_colori)
-                        picking = False
                         selected = False
                         pygame.mouse.set_cursor(0)
                         if (defaultPalette):
@@ -741,6 +742,8 @@ while running:
                             selected_color = (255, 255, 255)
                         drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
                         screen.blit(beforePick, pygame.Rect(200, 0, SCREEN_X-200, SCREEN_Y-50))
+                        picking = False
+                        wait = 30
 
                 # Click Default Palette
                 elif 250 <= mp[1] <= 300 and 950 <= mp[0] <= 1250:
@@ -785,7 +788,7 @@ while running:
                         pygame.draw.rect(screen, (50, 50, 50), colored_square, 3)
 
                 # Check if mouse is clicked on the sliders
-                elif 960 <= mp[0] <= 1218 and not onPicker:
+                elif 960 <= mp[0] <= 1218 and not onPicker and not (250 <= mp[1] <= 300):
                     onSliders = True
                     if 400 <= mp[1] <= 420:
                         r = get_slider_value(mp[0], 960)
@@ -808,6 +811,8 @@ while running:
     # draw everything
     pygame.display.flip()
     clock.tick(144)
+    if (wait > 0):
+        wait -= 1
 
 quit()
 #endregion
