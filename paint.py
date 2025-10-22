@@ -592,7 +592,7 @@ def updateCursor():
         # Modalità picking: cursore speciale su area centrale
         if 200 < mp[0] < 920 and mp[1] < 720:
             pygame.mouse.set_cursor(3)  # Cursore mano (pygame predefinito)
-        elif in_picking_buttons:
+        elif in_picking_buttons or (110 <= mp[1] <= 220 and 930 <= mp[0] <= 1270 and screen.get_at(mp) != (150, 150, 150, 255)):
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
         else:
             pygame.mouse.set_cursor(0)  # Cursore freccia
@@ -701,7 +701,6 @@ radius, centri = selectRadius(screen, 2)
 while running:
     # get mouse position
     mp = pygame.mouse.get_pos()
-
     updateCursor()
         
     #check events
@@ -826,7 +825,7 @@ while running:
                     defaultPalette = True
 
                 # Check if mouse is clicked within color palette squares
-                elif 110 <= mp[1] <= 220 and 930 <= mp[0] <= 1270:
+                elif 110 <= mp[1] <= 220 and 930 <= mp[0] <= 1270 and screen.get_at(mp) != (150, 150, 150, 255):
                     for j in range(len(colori[0])):
                         for i in range(len(colori)):
                             color_rect = pygame.Rect(930 + 58 * j, 110 + 58 * i, 50, 50)
