@@ -7,6 +7,10 @@ from copy import deepcopy
 from PIL import Image
 #endregion
 
+
+
+
+
 #region FUNCTIONS
 # Opens a dialog to save
 def select_save_file():
@@ -288,20 +292,21 @@ def toggleBucket(bucketFlag, rainbowFlag):
     drawBucket(screen, bucketFlag, colore)
     return bucketFlag, rainbowFlag
 
-# Changes the size of the drawing tool
 def changeSize(mp):
     """Changes the size of the drawing tool."""
     global radius
-    click = screen.get_at(mp) == (255,255,255)
-    selected = False
-    i = 0
-    while not selected and i < 4:
-        if (mp[0]**2+mp[1]**2) <= (centri[i][0]+8)**2 + (centri[i][1]+8)**2 and click:
-            selected = True
-            indice = i
-        i += 1
-    if selected:
-        radius = selectRadius(screen, indice)[0]
+    click = screen.get_at(mp) == (255, 255, 255)
+    if not click:
+        return
+
+    # Otteniamo i centri e il raggio dei cerchi
+    for i in range(4):
+        rad = (i + 2) * 2  # raggio del cerchio i-esimo
+        cx, cy = centri[i]
+        # Verifica se il mouse è dentro il cerchio
+        if (mp[0] - cx)**2 + (mp[1] - cy)**2 <= rad**2:
+            radius = selectRadius(screen, i)[0]
+            break
 
 # Takes a screenshot
 def save_canvas(screen, rect):
@@ -333,8 +338,7 @@ def draw_slider(screen, x, y, value, color):
     """Draw a slider bar with the given value and color."""
     pygame.draw.rect(screen, (255, 255, 255), (x, y, 258, 20))  # Background
     pygame.draw.rect(screen, (0, 0, 0), (x, y, 258, 20), 2)    # Border
-    pygame.draw.rect(screen, color, (x + 1, y + 1, value, 18)) # Value fill
-
+    pygame.draw.rect(screen, color, (x + 1, y + 1, value, 18)) # Value fill    
 # Animates the slider
 def get_slider_value(mouse_x, slider_x):
     """Calculate the slider value based on mouse position."""
@@ -477,6 +481,7 @@ def mousePressed():
     global colore, colorePrec, selectedPaletteCoord, saving, bucketStatus, rainbowStatus, picking, screenshot 
     global drawings_folder, screenshotsUndo, screenshotsRedo, flagUndo, tastoUndo, tastoRedo, listText, selected_image
     global salva, apri, cancella, riempi, arcobaleno, tastoPicker, SCREEN_X, SCREEN_Y, coordPalette, colori, beforePick
+    global pygame
 
     # click change color
     if 0 <= mp[0] <= 200 and 0 <= mp[1] <= SCREEN_Y-50 and not saving and not rainbowStatus and not picking:
@@ -560,7 +565,65 @@ def mousePressed():
     # click circles to change size
     elif mp[1] > SCREEN_Y-50 and not picking:
         changeSize(mp)
+
+
+    import pygame
+
+def updateCursor():
+    """
+    Aggiorna il cursore del mouse in base alla posizione.
+    """
+    global mp, screen, selected, picking, coordPalette, SCREEN_Y, centri
+
+    picking_buttons = picking_buttons = [
+    (925, 1015, 650, 700),   # Save
+    (1150, 1275, 650, 700),  # Cancel
+    (950, 1250, 250, 300),   # Default Palette
+    (960, 1218, 400, 420),  # R slider
+    (960, 1218, 450, 470),  # G slider
+    (960, 1218, 500, 550)   # B slider
+
+]
+
+    
+    in_picking_buttons = any(x_a <= mp[0] <= x_b and y_a <= mp[1] <= y_b for x_a, x_b, y_a, y_b in picking_buttons)
+
+    if picking:
+        # Modalità picking: cursore speciale su area centrale
+        if 200 < mp[0] < 920 and mp[1] < 720:
+            pygame.mouse.set_cursor(3)  # Cursore mano (pygame predefinito)
+        elif in_picking_buttons:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_cursor(0)  # Cursore freccia
+        return
+
+    # Controllo rettangoli della toolbar
+    rect_x_ranges = [
+        (5, 95), (105, 195), (205, 295), (305, 395),
+        (405, 495), (505, 550), (555, 600), (605, 650)
+    ]
+    in_rect = any(x_min <= mp[0] <= x_max for x_min, x_max in rect_x_ranges) and (SCREEN_Y - 50 < mp[1] < SCREEN_Y - 10)
+
+    in_circle = any([(mp[0] - 1080)**2 + (mp[1] - 745)**2 <= 4,
+                     (mp[0] - 1130)**2 + (mp[1] - 745)**2 <= 16,
+                     (mp[0] - 1180)**2 + (mp[1] - 745)**2 <= 36,
+                     (mp[0] - 1230)**2 + (mp[1] - 745)**2 <= 64])
+
+    # Controllo palette colori
+    in_palette = any(x_a <= mp[0] <= x_b and y_a <= mp[1] <= y_b for x_a, x_b, y_a, y_b in coordPalette)
+
+    # Imposta cursore in base alla posizione
+    if in_rect or in_circle or in_palette:
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+    else:
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
 #endregion
+
+
+
+
 
 #region VARIABLES
 # Initialize Pygame
@@ -616,6 +679,7 @@ onPicker = False
 onSliders = False
 defaultPalette = False
 wait = 0
+beforePick = ""
 
 # Set up the display
 pygame.display.set_caption("PAINT IN PYTHON")
@@ -629,15 +693,17 @@ draw_toolbar(listText)
 radius, centri = selectRadius(screen, 2)
 #endregion
 
+
+
+
+
 #region MAIN LOOP
 while running:
     # get mouse position
     mp = pygame.mouse.get_pos()
-    if picking:
-        if 200 < mp[0] < 920 and mp[1] < 720:
-            pygame.mouse.set_cursor(3)
-        else:
-            pygame.mouse.set_cursor(0)
+
+    updateCursor()
+        
     #check events
     for e in pygame.event.get():
 
@@ -675,7 +741,10 @@ while running:
                             colore = colorePrec
                             colorePrec = None
                     pygame.draw.circle(screen, colore, mp, radius)
-                    
+
+                    if last_pos:
+                        roundLine(screen, colore, mp, last_pos, radius)
+
                     draw_toolbar(listText)
                     selectRadius(screen, (radius//2)-2)
                     drawPalette(screen, colori, coordPalette, selectedPaletteCoord)
@@ -684,9 +753,6 @@ while running:
                         drawRainbow(screen, True)
                     elif bucketStatus:
                         drawBucket(screen, True, colore)
-                    if last_pos:
-                        roundLine(screen, colore, mp, last_pos, radius)
-
 
                     last_pos = mp
                 else:
