@@ -879,5 +879,5 @@ while running:
     if (wait > 0):
         wait -= 1
 
-quit()
+pygame.quit()
 #endregion
