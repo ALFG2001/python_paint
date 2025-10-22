@@ -1,10 +1,13 @@
+#region IMPORTS
 import pygame
 from os import path, makedirs
 from glob import glob
 from tkinter import Tk, filedialog, messagebox
 from copy import deepcopy
 from PIL import Image
+#endregion
 
+#region FUNCTIONS
 # Opens a dialog to save
 def select_save_file():
     """Opens a file explorer to select folder and enter file name."""
@@ -557,8 +560,9 @@ def mousePressed():
     # click circles to change size
     elif mp[1] > SCREEN_Y-50 and not picking:
         changeSize(mp)
-    
+#endregion
 
+#region VARIABLES
 # Initialize Pygame
 pygame.init()
 
@@ -622,8 +626,9 @@ draw_toolbar(listText)
 
 # Radius selection
 radius, centri = selectRadius(screen, 2)
+#endregion
 
-# Main loop
+#region MAIN LOOP
 while running:
     # get mouse position
     mp = pygame.mouse.get_pos()
@@ -805,3 +810,4 @@ while running:
     clock.tick(144)
 
 quit()
+#endregion
