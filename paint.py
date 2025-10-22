@@ -1,7 +1,7 @@
 import pygame
 from os import path, makedirs
 from glob import glob
-from tkinter import Tk, simpledialog, filedialog, messagebox
+from tkinter import Tk, filedialog, messagebox
 from copy import deepcopy
 from PIL import Image
 
