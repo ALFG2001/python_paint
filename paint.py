@@ -449,6 +449,101 @@ class CircleButton:
                 return True
         
         return False
+    
+
+# --- COLOR SLIDER CLASS ---
+@dataclass
+class ColorSlider(RectButton):
+    """
+    RGB color slider that displays and controls a single color channel (R, G, or B).
+    Supports dragging to adjust the color value from 0-255.
+    """
+    slider_color: Tuple[int, int, int] = (255, 0, 0)
+    channel: str = 'r'  # 'r', 'g', or 'b'
+    color_picker: 'ColorPicker' = None  # Reference to parent ColorPicker
+    _slider_length: int = field(default=0, init=False)
+    _is_dragging: bool = field(default=False, init=False)
+
+    @property
+    def current_text_color(self) -> Tuple[int,int,int]:
+        """Returns text color based on whether button is enabled."""
+        return (255, 255, 255)
+
+    @property
+    def slider_length(self) -> int:
+        """Return the current slider length based on color value."""
+        return self._slider_length
+
+    def update_from_mouse(self, mouse_x: int):
+        """Update the color value based on mouse x position."""
+        if not self.color_picker:
+            return
+        
+        local_x = mouse_x - self.x - 2
+        max_width = self.width - 4
+        value = max(0, min(255, int((local_x / max_width) * 255)))
+        
+        
+        r, g, b = self.color_picker.hover_color
+        
+        if self.channel == 'r':
+            self.color_picker.hover_color = (value, g, b)
+        elif self.channel == 'g':
+            self.color_picker.hover_color = (r, value, b)
+        elif self.channel == 'b':
+            self.color_picker.hover_color = (r, g, value)
+        
+        r, g, b = self.color_picker.hover_color
+
+    def draw(self, surface: pygame.Surface) -> None:
+        """Draws the slider with its current color value."""
+        slider_rect = self.rect.copy()
+        slider_rect.y += 2
+        slider_rect.x += 2
+        slider_rect.height -= 4
+        max_width = self.rect.width - 4
+        
+        # Calculate slider length based on the channel value
+        if self.color_picker:
+            r, g, b = self.color_picker.hover_color
+            if self.channel == 'r':
+                value = r
+            elif self.channel == 'g':
+                value = g
+            else:  # 'b'
+                value = b
+            slider_rect.width = int((value / 255) * max_width)
+        else:
+            value = 0
+            slider_rect.width = 0
+        
+        self._slider_length = slider_rect.width
+        # Display the actual RGB value (0-255), not the pixel width
+        self.text = f"{self.channel.upper()}: {value}"
+
+        pygame.draw.rect(surface, self.color, self.rect)
+        pygame.draw.rect(surface, self.get_draw_outline(), self.rect, width=2)
+        pygame.draw.rect(surface, self.slider_color, slider_rect)
+
+        if self.text:
+            txt_surf = self.font.render(self.text, True, self.current_text_color)
+            # Position text to the right of the slider
+            center = (self.rect.right + 40, self.rect.centery)
+            txt_rect = txt_surf.get_rect(center=center)
+            surface.blit(txt_surf, txt_rect)
+
+    def update(self) -> None:
+        """Updates hover state and cursor based on mouse position."""
+        mouse_pos = pygame.mouse.get_pos()
+        hovering = self.rect.collidepoint(mouse_pos) if self.enabled else False
+
+        if hovering and not self._is_hovered:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+        elif (not hovering) and self._is_hovered:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
+        self._is_hovered = hovering
+
 
 # --- BUTTON MANAGER CLASS ---
 class ButtonManager:
@@ -517,6 +612,7 @@ class ColorPicker:
     color:Tuple[int, int, int] = None
     color_picker_palette_manager: ButtonManager = field(default_factory=ButtonManager)
     color_picker_button_manager: ButtonManager = field(default_factory=ButtonManager)
+    color_picker_slider_manager: ButtonManager = field(default_factory=ButtonManager)
 
     _is_dragging: bool = field(default=False, init=False)
     _temp_hover_color: Tuple[int, int, int] = field(default=(255,255,255), init=False)
@@ -691,6 +787,23 @@ class ColorPicker:
                 # Select first button by default
                 if (x == 0 and y == 0):
                     self.color_picker_palette_manager.select_button(palette_button)
+
+        slider_y_positions = [350, 400, 450]
+        slider_channels = ['r', 'g', 'b']
+        slider_base_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+        
+        for i, (y_pos, channel, base_color) in enumerate(zip(slider_y_positions, slider_channels, slider_base_colors)):
+            slider = ColorSlider(
+                x=950, y=y_pos, width=258, height=30,
+                color=(255, 255, 255), 
+                outline_color=(0, 0, 0), 
+                selected_outline=(0, 0, 0),
+                slider_color=base_color,
+                channel=channel,
+                color_picker=self,
+                
+            )
+            self.color_picker_slider_manager.add(slider)
 
     def make_picker_ui(self, screen: pygame.Surface):
         """
@@ -1210,7 +1323,32 @@ class UI:
                     # Color picker mode: handle picker buttons
                     self.color_picker.color_picker_button_manager.handle_event(event)
                     self.color_picker.color_picker_palette_manager.handle_event(event)
+                    self.color_picker.color_picker_slider_manager.handle_event(event)
 
+                    # Handle slider dragging
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        # Check if clicking on any slider
+                        for i, btn in enumerate(self.color_picker.color_picker_slider_manager.buttons):
+                            if isinstance(btn, ColorSlider):
+                                if btn.rect.collidepoint(event.pos):
+                                    btn._is_dragging = True
+                                    btn.update_from_mouse(mx)
+                    
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        # Stop dragging all sliders
+                        for i, btn in enumerate(self.color_picker.color_picker_slider_manager.buttons):
+                            if isinstance(btn, ColorSlider):
+                                if btn._is_dragging:
+                                    # Save the color when releasing after dragging a slider
+                                    self.color_picker.color = self.color_picker.hover_color
+                                    self.color_picker.new_colors[self.color_picker.row][self.color_picker.col] = self.color_picker.color
+                                    
+                                    # Update the picker palette button
+                                    picker_button = self.color_picker.color_picker_palette_manager.buttons[self.color_picker.coord]
+                                    picker_button.color = self.color_picker.color
+                                    picker_button.default_outline = self.color_picker.color
+                                    
+                                btn._is_dragging = False
 
                 # Drawing logic (only in normal mode)
                 if(not self.picking_color):
@@ -1236,40 +1374,48 @@ class UI:
 
                 # Color picker interaction logic
                 elif self.picking_color:
-                    picker_button = self.color_picker.color_picker_button_manager.buttons[0]
+                    any_slider_dragging = False
+                    for btn in self.color_picker.color_picker_slider_manager.buttons:
+                        if isinstance(btn, ColorSlider) and btn._is_dragging:
+                            any_slider_dragging = True
+                            btn.update_from_mouse(mx)
+                            break
                     
-                    # Picker grid boundaries
-                    picker_left = 200
-                    picker_top = 0
-                    picker_width = 720
-                    picker_height = 720
-                    picker_right = picker_left + picker_width
-                    picker_bottom = picker_top + picker_height
+                    if not any_slider_dragging:
+                        picker_button = self.color_picker.color_picker_button_manager.buttons[0]
+                        
+                        # Picker grid boundaries
+                        picker_left = 200
+                        picker_top = 0
+                        picker_width = 720
+                        picker_height = 720
+                        picker_right = picker_left + picker_width
+                        picker_bottom = picker_top + picker_height
 
-                    # Handle mouse down - start dragging
-                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        if picker_left <= event.pos[0] <= picker_right and picker_top <= event.pos[1] <= picker_bottom:
-                            self.color_picker._is_dragging = True
+                        # Handle mouse down - start dragging
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if picker_left <= event.pos[0] <= picker_right and picker_top <= event.pos[1] <= picker_bottom:
+                                self.color_picker._is_dragging = True
 
-                    # Handle mouse up - confirm selection
-                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-                        if self.color_picker._is_dragging:
-                            self.color_picker._is_dragging = False
-                            self.color_picker.click_picker(self.screen)
+                        # Handle mouse up - confirm selection
+                        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                            if self.color_picker._is_dragging:
+                                self.color_picker._is_dragging = False
+                                self.color_picker.click_picker(self.screen)
 
-                    # Update hover color while dragging or moving
-                    if picker_left <= mx <= picker_right and picker_top <= my <= picker_bottom:
-                        if self.color_picker._is_dragging or event.type == pygame.MOUSEMOTION:
-                            # Convert to local coordinates
-                            local_x = mx - picker_left
-                            local_y = my - picker_top
+                        # Update hover color while dragging or moving
+                        if picker_left <= mx <= picker_right and picker_top <= my <= picker_bottom:
+                            if self.color_picker._is_dragging:
+                                # Convert to local coordinates
+                                local_x = mx - picker_left
+                                local_y = my - picker_top
 
-                            # Get color at pixel
-                            try:
-                                selected_color = picker_button.image.get_at((local_x, local_y))
-                                self.color_picker.hover_color = selected_color[0], selected_color[1], selected_color[2]
-                            except (IndexError, pygame.error):
-                                pass
+                                # Get color at pixel
+                                try:
+                                    selected_color = picker_button.image.get_at((local_x, local_y))
+                                    self.color_picker.hover_color = selected_color[0], selected_color[1], selected_color[2]
+                                except (IndexError, pygame.error):
+                                    pass
                 
 
             # Update all button states
@@ -1288,11 +1434,13 @@ class UI:
                 # Color picker mode rendering
                 self.color_picker.color_picker_button_manager.update_all()
                 self.color_picker.color_picker_palette_manager.update_all()
+                self.color_picker.color_picker_slider_manager.update_all()
 
                 self.color_picker.update(self.screen)
                 self.color_picker.color_picker_button_manager.draw_all(self.screen)
                 self.color_picker.color_picker_palette_manager.draw_all(self.screen)
-            
+                self.color_picker.color_picker_slider_manager.draw_all(self.screen)
+
             # Always draw toolbar
             self.toolbar_button_manager.draw_all(self.screen)
 
