@@ -591,6 +591,18 @@ class ButtonManager:
         button.is_selected = True
         self._selected_button = button
 
+        if (isinstance(button, CircleButton)):
+            for b in self.buttons:
+                b.shortcut = None
+
+            index = self.buttons.index(button)
+            if index < 3 and len(self.buttons) > 3:
+                self.buttons[index+1].shortcut = (pygame.K_PLUS, False, False)
+
+            if index > 0:
+                self.buttons[index-1].shortcut = (pygame.K_MINUS, False, False)
+
+
 
 # --- COLOR PICKER CLASS ---
 @dataclass
@@ -1165,8 +1177,12 @@ class UI:
             size_button = CircleButton(x=x, y=self.screen_height - 25, radius=r, color=(255,255,255), outline_color=(0,0,0),on_click=lambda r=r: self.size_changer(r))
             self.size_changer_button_manager.add(size_button)
             # Select default size (8px)
-            if (r == 8):
+            if(r == 6):
+                size_button.shortcut = (pygame.K_MINUS, False, False)
+            elif (r == 8):
                 self.size_changer_button_manager.select_button(size_button)
+            elif (r == 10):
+                size_button.shortcut = (pygame.K_PLUS, False, False)
 
     def draw_ui_rectangles(self):
         """
