@@ -893,6 +893,8 @@ class UI:
         )
         self.holding_picking = False
 
+        self.icon_name = 'picker/color_grid.png'
+
     def save_project(self):
         """
         Save the current canvas as an image file.
@@ -1297,6 +1299,12 @@ class UI:
         Main application loop.
         Handles all events, updates, and rendering.
         """
+        
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(script_dir, self.icon_name)
+        icon_surface = pygame.image.load(icon_path)
+        pygame.display.set_icon(icon_surface)
+
         running = True
         # Define canvas boundaries (drawing area)
         canvas_x_start = 200
