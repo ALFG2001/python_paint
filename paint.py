@@ -893,7 +893,7 @@ class UI:
         )
         self.holding_picking = False
 
-        self.icon_name = 'picker/color_grid.png'
+        self.icon_name = 'picker/icon_paint.png'
 
     def save_project(self):
         """
